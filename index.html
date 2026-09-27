@@ -711,7 +711,7 @@ function renderHistory(session, rounds) {
     ? session.players[rtIdxForPhase] : null;
 
   infoEl.innerHTML = `
-    <span class="text-[var(--muted-foreground)] font-medium">Phase ${selectedHistoryPhase} · ${phaseRounds.length} rounds played</span>
+    <span class="text-[var(--muted-foreground)] font-medium">Phase ${selectedHistoryPhase} of ${phaseRounds.length} rounds played</span>
     ${rtName ? `<span class="badge badge-rt text-[10px]">Pak RT: ${esc(rtName)}</span>` : ''}
   `;
   infoEl.classList.remove('hidden');
