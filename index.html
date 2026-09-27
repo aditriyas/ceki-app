@@ -123,7 +123,10 @@
     .animate-marquee {
       display: inline-block;
       white-space: nowrap;
-      animation: marquee 25s linear infinite;
+      animation: marquee 35s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
     }
 
     @keyframes pulse-gold {
@@ -281,7 +284,7 @@
     <div id="vip-marquee-content" class="animate-marquee font-medium text-amber-300 text-xs">
       🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; 
       ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 
-      🃏 <span class="font-bold text-red-400">PAK RT STATUS:</span> Lowest rank becomes Pak RT & shuffles cards &nbsp;·&nbsp; 
+      🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> <span class="text-slate-400 font-normal italic">Loading...</span> &nbsp;·&nbsp; 
       🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!
     </div>
   </div>
@@ -416,13 +419,22 @@
   <div class="flex items-center gap-3 mb-5 pt-1">
     <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl p-1 -ml-1" title="Back">←</button>
     <div class="flex-1 min-w-0">
-      <h2 id="game-title" class="text-xl font-black font-casino gold-text truncate"></h2>
+      <div class="flex items-center gap-2">
+        <h2 id="game-title" class="text-xl font-black font-casino gold-text truncate"></h2>
+        <span id="game-closed-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-600/30 text-slate-300 border border-slate-500/40 shrink-0">CLOSED</span>
+      </div>
       <p id="game-subtitle" class="text-xs text-[var(--muted-foreground)]"></p>
     </div>
-    <button onclick="confirmDeleteSession(activeSessionId)" class="text-xs text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-1 shrink-0" title="Delete Table">
-      <span>🗑️</span>
-      <span data-i18n="game_btn_delete" class="hidden sm:inline font-medium">Delete Table</span>
-    </button>
+    <div class="flex items-center gap-1 shrink-0">
+      <button id="btn-toggle-close-session" onclick="toggleCloseSession(activeSessionId)" class="text-xs p-2 rounded-lg hover:bg-slate-500/10 transition-colors flex items-center gap-1 text-[var(--muted-foreground)] hover:text-amber-400" title="Close / Reopen Table">
+        <span id="btn-toggle-close-icon">🔒</span>
+        <span id="btn-toggle-close-label" class="hidden sm:inline font-medium">Close Table</span>
+      </button>
+      <button onclick="confirmDeleteSession(activeSessionId)" class="text-xs text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-1" title="Delete Table">
+        <span>🗑️</span>
+        <span data-i18n="game_btn_delete" class="hidden sm:inline font-medium">Delete Table</span>
+      </button>
+    </div>
   </div>
 
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-4 shadow-sm">
@@ -433,14 +445,24 @@
     <div id="leaderboard" class="space-y-2"></div>
   </div>
 
+  <!-- Closed Session Banner -->
+  <div id="game-closed-banner" class="hidden mb-4 bg-slate-800/60 border border-slate-600/40 rounded-2xl p-4 text-center">
+    <div class="text-2xl mb-1">🔒</div>
+    <h3 data-i18n="game_closed_banner_title" class="font-bold text-sm text-slate-200">Table Closed (Read Only)</h3>
+    <p data-i18n="game_closed_banner_sub" class="text-xs text-slate-400 mt-1">This table is closed. All scores and rounds are read-only.</p>
+    <button onclick="toggleCloseSession(activeSessionId)" data-i18n="session_btn_reopen" class="mt-3 text-xs bg-slate-700 hover:bg-slate-600 text-white font-semibold px-3.5 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1">
+      <span>🔓</span> <span>Reopen Table</span>
+    </button>
+  </div>
+
   <div id="pending-banner" class="hidden mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
     <p data-i18n="game_pending_title" class="text-xs font-semibold text-yellow-400 mb-1">⏳ Round in progress</p>
     <p id="pending-status" class="text-xs text-[var(--muted-foreground)]"></p>
   </div>
 
-  <div class="mb-4">
-    <p data-i18n="game_enter_score_title" class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 font-casino">🎴 ENTER ROUND SCORE</p>
-    <p data-i18n="game_enter_score_sub" class="text-xs text-[var(--muted-foreground)] mb-3">Tap a player's card to enter score chips:</p>
+  <div id="score-input-section" class="mb-4">
+    <p id="game-enter-score-title" data-i18n="game_enter_score_title" class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 font-casino">🎴 ENTER ROUND SCORE</p>
+    <p id="game-enter-score-sub" data-i18n="game_enter_score_sub" class="text-xs text-[var(--muted-foreground)] mb-3">Tap a player's card to enter score chips:</p>
     <div id="player-cards" class="grid grid-cols-2 gap-3"></div>
   </div>
 
@@ -692,10 +714,11 @@
       <p data-i18n="modal_rt_quote" class="text-[10px] text-slate-400 italic mt-2">🃏 "Must shuffle cards for the next phase!"</p>
     </div>
 
-    <p data-i18n="modal_rt_prompt" class="text-xs text-slate-400 mb-4">Start a new phase? All player scores will reset to 0.</p>
-    <div class="flex gap-2">
-      <button onclick="dismissRTModal()" data-i18n="modal_btn_dismiss" class="flex-1 bg-slate-800 text-slate-300 font-bold rounded-xl py-2.5 text-xs hover:bg-slate-700">Dismiss</button>
-      <button onclick="startNewPhase()" data-i18n="modal_btn_new_phase" class="flex-1 btn-gold rounded-xl py-2.5 text-xs font-black shadow-lg">NEW PHASE 🔄</button>
+    <p data-i18n="modal_rt_prompt" class="text-xs text-slate-400 mb-3">Table reached 1,000 pts! Start next phase or close table?</p>
+    <div class="space-y-2">
+      <button onclick="startNewPhase()" data-i18n="modal_btn_new_phase" class="w-full btn-gold rounded-xl py-2.5 text-xs font-black shadow-lg">NEW PHASE 🔄</button>
+      <button onclick="closeSessionFromRTModal()" data-i18n="modal_btn_close_session" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-amber-300 rounded-xl py-2.5 text-xs font-bold transition-all">CLOSE TABLE (FINISH) 🔒</button>
+      <button onclick="dismissRTModal()" data-i18n="modal_btn_dismiss" class="w-full bg-transparent hover:bg-slate-800/40 text-slate-400 font-semibold rounded-xl py-1 text-xs transition-colors">Dismiss</button>
     </div>
   </div>
 </div>
@@ -731,6 +754,7 @@ let activeRounds     = [];
 let historyVisible   = false;
 let modalPlayerIdx   = null;
 let allSessions      = [];
+let allSessionsRoundsMap = {};
 let rtTriggerPlayers = []; // players who just hit ≥1000
 let selectedHistoryPhase = null;
 let editRoundId      = null;
@@ -756,7 +780,12 @@ const translations = {
     nav_theme_classic: "Theme",
     nav_lang: "EN",
 
-    ticker_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">PAK RT STATUS:</span> Lowest rank becomes Pak RT & shuffles cards &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
+    ticker_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> No Pak RT yet (All Safe) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
+    ticker_shame_title: "WALL OF SHAME (PAK RT):",
+    ticker_shame_empty: "No Pak RT yet (All Safe)",
+    ticker_arena_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers',
+    ticker_hot_text: '⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin!',
+    ticker_anti_cheat_text: '🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
 
     // Setup Screen
     setup_title: "OPEN NEW CEKI TABLE",
@@ -824,6 +853,12 @@ const translations = {
     badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
     badge_calon_rt_classic: "Calon RT",
+    badge_closed: "CLOSED",
+    badge_closed_classic: "Closed",
+    session_btn_close: "Close Table",
+    session_btn_reopen: "Reopen Table",
+    game_closed_banner_title: "Table Closed (Read Only)",
+    game_closed_banner_sub: "This table is closed. All scores and rounds are read-only.",
 
     // Modals - Score
     modal_score_title: "ENTER PLAYER SCORE",
@@ -861,10 +896,13 @@ const translations = {
     modal_rt_new_label: "New Pak RT",
     modal_rt_quote: '🃏 "Must shuffle cards for the next phase!"',
     modal_rt_quote_classic: '🃏 "New Pak RT must shuffle cards for the next phase"',
-    modal_rt_prompt: "Start a new phase? All player scores will reset to 0.",
+    modal_rt_prompt: "Table reached 1,000 pts! Start next phase or close table?",
+    modal_rt_prompt_classic: "1,000 points reached! Start a new phase or close this session?",
     modal_btn_dismiss: "Dismiss",
     modal_btn_new_phase: "NEW PHASE 🔄",
     modal_btn_new_phase_classic: "Start New Phase",
+    modal_btn_close_session: "CLOSE TABLE (FINISH) 🔒",
+    modal_btn_close_session_classic: "Close Session",
 
     // Modals - Delete Session
     modal_del_sess_title: "Delete Table?",
@@ -894,6 +932,8 @@ const translations = {
     audit_action_del_round: "🗑️ Round Deleted",
     audit_action_del_session: "🗑️ Session Deleted",
     audit_action_new_phase: "🔄 New Phase",
+    audit_action_close_session: "🔒 Table Closed",
+    audit_action_reopen_session: "🔓 Table Reopened",
     audit_ip_label: "IP Address:",
     audit_loc_label: "Location:",
     audit_dev_label: "Device:",
@@ -909,6 +949,8 @@ const translations = {
     toast_round_deleted: "Round deleted",
     toast_session_deleted: 'Table "{name}" deleted',
     toast_session_deleted_classic: 'Session "{name}" deleted',
+    toast_session_closed: 'Table "{name}" is now closed.',
+    toast_session_reopened: 'Table "{name}" reopened.',
     toast_lang_changed: "Language: English",
     toast_theme_changed: "Theme: {name}"
   },
@@ -927,7 +969,12 @@ const translations = {
     nav_theme_classic: "Tema",
     nav_lang: "ID",
 
-    ticker_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">STATUS RT:</span> Peringkat terbawah jadi Pak RT & ngocok kartu &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
+    ticker_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> Belum ada korban (Semua Aman) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
+    ticker_shame_title: "WALL OF SHAME (PAK RT):",
+    ticker_shame_empty: "Belum ada korban (Semua Aman)",
+    ticker_arena_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan',
+    ticker_hot_text: '⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin!',
+    ticker_anti_cheat_text: '🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
 
     // Setup Screen
     setup_title: "BUKA MEJA CEKI BARU",
@@ -995,6 +1042,12 @@ const translations = {
     badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
     badge_calon_rt_classic: "Calon RT",
+    badge_closed: "SELESAI",
+    badge_closed_classic: "Selesai",
+    session_btn_close: "Tutup Meja",
+    session_btn_reopen: "Buka Kembali Meja",
+    game_closed_banner_title: "Meja Selesai (Read Only)",
+    game_closed_banner_sub: "Meja ini telah ditutup. Semua skor dan putaran terkunci (hanya lihat).",
 
     // Modals - Score
     modal_score_title: "INPUT SKOR PEMAIN",
@@ -1032,10 +1085,13 @@ const translations = {
     modal_rt_new_label: "Pak RT Baru",
     modal_rt_quote: '🃏 "Wajib ngocok kartu untuk fase berikutnya!"',
     modal_rt_quote_classic: '🃏 "Pak RT baru wajib mengocok kartu untuk fase berikutnya"',
-    modal_rt_prompt: "Mulai fase baru? Semua skor direset ke 0.",
+    modal_rt_prompt: "Poin tembus 1.000! Mulai fase baru atau selesaikan meja?",
+    modal_rt_prompt_classic: "Mencapai 1.000 poin! Mulai fase baru atau tutup sesi ini?",
     modal_btn_dismiss: "Tutup",
     modal_btn_new_phase: "FASE BARU 🔄",
     modal_btn_new_phase_classic: "Mulai Fase Baru",
+    modal_btn_close_session: "TUTUP MEJA (SELESAI) 🔒",
+    modal_btn_close_session_classic: "Tutup Sesi",
 
     // Modals - Delete Session
     modal_del_sess_title: "Hapus Meja?",
@@ -1065,6 +1121,8 @@ const translations = {
     audit_action_del_round: "🗑️ Putaran Dihapus",
     audit_action_del_session: "🗑️ Sesi Dihapus",
     audit_action_new_phase: "🔄 Fase Baru",
+    audit_action_close_session: "🔒 Meja Ditutup",
+    audit_action_reopen_session: "🔓 Meja Dibuka Kembali",
     audit_ip_label: "Alamat IP:",
     audit_loc_label: "Lokasi:",
     audit_dev_label: "Perangkat:",
@@ -1080,6 +1138,8 @@ const translations = {
     toast_round_deleted: "Putaran dihapus",
     toast_session_deleted: 'Meja "{name}" dihapus',
     toast_session_deleted_classic: 'Sesi "{name}" dihapus',
+    toast_session_closed: 'Meja "{name}" telah ditutup.',
+    toast_session_reopened: 'Meja "{name}" dibuka kembali.',
     toast_lang_changed: "Bahasa: Indonesia",
     toast_theme_changed: "Tema: {name}"
   }
@@ -1129,9 +1189,8 @@ function updateLanguageUI() {
   const langLabel = document.getElementById('lang-btn-label');
   if (langLabel) langLabel.textContent = currentLang.toUpperCase();
 
-  // Ticker marquee
-  const tickerEl = document.getElementById('vip-marquee-content');
-  if (tickerEl) tickerEl.innerHTML = t('ticker_text');
+  // Ticker marquee with Wall of Shame
+  updateTickerWithWallOfShame();
 
   // Setup screen dynamic icon
   const setupIcon = document.getElementById('setup-icon');
@@ -1272,7 +1331,7 @@ function getMaxRoundPhase(rounds) {
 
 function getScoringPhase(session, rounds) {
   const maxPhase = getMaxRoundPhase(rounds);
-  const hadRT    = (session.rt_players || []).some(rt => rt.phase === maxPhase || rt.phase === maxPhase + 1);
+  const hadRT    = (session.rt_players || []).some(rt => typeof rt.phase === 'number' && (rt.phase === maxPhase || rt.phase === maxPhase + 1));
   const hasNext  = rounds.some(r => (r.phase ?? 1) > maxPhase);
   return (hadRT && !hasNext) ? maxPhase + 1 : maxPhase;
 }
@@ -1297,7 +1356,7 @@ function getCalonRTIndex(session, rounds) {
 // "RT" = sticky label from the MOST RECENT phase that ended
 // stored as the last entry in session.rt_players
 function getCurrentRTIndex(session) {
-  const arr = session.rt_players || [];
+  const arr = (session.rt_players || []).filter(e => typeof e.phase === 'number' && typeof e.player_idx === 'number');
   if (!arr.length) return null;
   // Most recent phase
   const maxPhase = Math.max(...arr.map(e => e.phase));
@@ -1308,7 +1367,7 @@ function getCurrentRTIndex(session) {
 // Pak RT recorded for a specific phase (Phase 1 never has RT, RT serves in Phase 2, 3...)
 function getRTForPhase(session, phase) {
   if (phase <= 1) return null; // Phase 1 never has an RT
-  const arr = session.rt_players || [];
+  const arr = (session.rt_players || []).filter(e => typeof e.phase === 'number');
   // Match direct phase (e.g. Phase 2)
   const entry = arr.find(e => e.phase === phase);
   if (entry) return entry.player_idx;
@@ -1316,6 +1375,150 @@ function getRTForPhase(session, phase) {
   const legacy = arr.find(e => e.phase === phase - 1);
   if (legacy) return legacy.player_idx;
   return null;
+}
+
+// ── Session Closure & Wall of Shame Logic ─────────────────
+function isSessionClosed(session) {
+  if (!session) return false;
+  if ((session.rt_players || []).some(e => e && e.is_closed === true)) return true;
+  try {
+    const closedList = JSON.parse(localStorage.getItem('ceki_closed_sessions') || '[]');
+    if (closedList.includes(session.id)) return true;
+  } catch (e) {}
+  return false;
+}
+
+function getWallOfShameHtml() {
+  if (!allSessions || allSessions.length === 0) {
+    return `<span class="text-slate-400 font-normal italic">${t('ticker_shame_empty')}</span>`;
+  }
+
+  const entries = [];
+
+  for (const s of allSessions) {
+    // Closed sessions MUST NOT appear in the running text ticker!
+    if (isSessionClosed(s)) continue;
+
+    const sRounds = allSessionsRoundsMap[s.id] || [];
+    const curPhase = getScoringPhase(s, sRounds);
+    const rtIdx = getCurrentRTIndex(s);
+    const doneCount = sRounds.filter(r => r.is_complete && (r.phase ?? 1) === curPhase).length;
+    const totals = calcTotals(s, sRounds);
+    const maxTotal = totals.length ? Math.max(...totals) : 0;
+    const minTotal = totals.length ? Math.min(...totals) : 0;
+    const hasScoreDiff = doneCount > 0 && maxTotal !== minTotal;
+
+    const shortName = s.name.length > 20 ? esc(s.name.substring(0, 18)) + '…' : esc(s.name);
+
+    if (rtIdx !== null && s.players && s.players[rtIdx]) {
+      const pName = esc(s.players[rtIdx]);
+      entries.push(`<span class="text-white font-semibold">[${shortName}]</span> <span class="text-yellow-300 font-bold">${pName}</span> <span class="text-red-400 font-bold">(${t('badge_pak_rt')})</span>`);
+    } else if (hasScoreDiff) {
+      const calonIdx = getCalonRTIndex(s, sRounds);
+      if (calonIdx !== null && s.players && s.players[calonIdx]) {
+        const pName = esc(s.players[calonIdx]);
+        entries.push(`<span class="text-white font-semibold">[${shortName}]</span> <span class="text-yellow-300 font-bold">${pName}</span> <span class="text-red-400 font-bold">(${t('badge_calon_rt')})</span>`);
+      }
+    }
+  }
+
+  if (entries.length === 0) {
+    return `<span class="text-slate-400 font-normal italic">${t('ticker_shame_empty')}</span>`;
+  }
+
+  return entries.join(' &nbsp;✦&nbsp; ');
+}
+
+function updateTickerWithWallOfShame() {
+  const tickerEl = document.getElementById('vip-marquee-content');
+  if (!tickerEl) return;
+
+  const arena = t('ticker_arena_text');
+  const hot = t('ticker_hot_text');
+  const shameTitle = t('ticker_shame_title');
+  const shameContent = getWallOfShameHtml();
+  const antiCheat = t('ticker_anti_cheat_text');
+
+  tickerEl.innerHTML = `${arena} &nbsp;·&nbsp; ${hot} &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">${shameTitle}</span> ${shameContent} &nbsp;·&nbsp; ${antiCheat}`;
+}
+
+async function toggleCloseSession(sessionId = null) {
+  const id = sessionId || activeSessionId;
+  const session = allSessions.find(s => s.id === id) || (activeSessionId === id ? activeSession : null);
+  if (!session) return;
+
+  const currentlyClosed = isSessionClosed(session);
+
+  const confirmMsg = currentLang === 'id'
+    ? (currentlyClosed
+        ? `Buka kembali sesi "${session.name}"? Sesi akan aktif kembali dan bisa diisi skor.`
+        : `Tutup sesi "${session.name}"? Sesi yang ditutup akan menjadi read-only dan disembunyikan dari Wall of Shame.`)
+    : (currentlyClosed
+        ? `Reopen table "${session.name}"? Table will become active again.`
+        : `Close table "${session.name}"? Closed tables become read-only and are hidden from the Wall of Shame.`);
+
+  if (!confirm(confirmMsg)) return;
+
+  showLoading(currentlyClosed
+    ? (currentLang === 'id' ? 'Membuka meja...' : 'Reopening table...')
+    : (currentLang === 'id' ? 'Menutup meja...' : 'Closing table...'));
+
+  let updatedRtPlayers = [...(session.rt_players || [])];
+  if (currentlyClosed) {
+    updatedRtPlayers = updatedRtPlayers.filter(e => !e || !e.is_closed);
+  } else {
+    updatedRtPlayers = updatedRtPlayers.filter(e => !e || !e.is_closed);
+    updatedRtPlayers.push({ is_closed: true, closed_at: new Date().toISOString() });
+  }
+
+  // Sync localStorage
+  try {
+    let closedList = JSON.parse(localStorage.getItem('ceki_closed_sessions') || '[]');
+    if (currentlyClosed) {
+      closedList = closedList.filter(x => x !== id);
+    } else {
+      if (!closedList.includes(id)) closedList.push(id);
+    }
+    localStorage.setItem('ceki_closed_sessions', JSON.stringify(closedList));
+  } catch (e) {}
+
+  const { error } = await db.from('sessions')
+    .update({ rt_players: updatedRtPlayers })
+    .eq('id', id);
+
+  hideLoading();
+
+  if (error) {
+    showToast(currentLang === 'id' ? 'Gagal menyimpan status sesi' : 'Failed to update session status');
+    return;
+  }
+
+  session.rt_players = updatedRtPlayers;
+  if (activeSession && activeSession.id === id) {
+    activeSession.rt_players = updatedRtPlayers;
+  }
+
+  logAuditAction({
+    session_id: id,
+    action: currentlyClosed ? 'REOPEN_SESSION' : 'CLOSE_SESSION',
+    player_name: session.name,
+    description: currentlyClosed
+      ? (currentLang === 'id' ? `Meja "${session.name}" dibuka kembali.` : `Table "${session.name}" reopened.`)
+      : (currentLang === 'id' ? `Meja "${session.name}" ditutup (selesai).` : `Table "${session.name}" closed.`)
+  });
+
+  const toastMsg = currentlyClosed
+    ? t('toast_session_reopened', { name: session.name })
+    : t('toast_session_closed', { name: session.name });
+  showToast(toastMsg, 'success');
+
+  updateTickerWithWallOfShame();
+
+  if (!document.getElementById('screen-sessions').classList.contains('hidden')) {
+    renderSessionsList(allSessions);
+  } else if (!document.getElementById('screen-game').classList.contains('hidden') && activeSession) {
+    renderGame();
+  }
 }
 
 // ── Loading / Toast ───────────────────────────────────────
@@ -1410,7 +1613,21 @@ async function init() {
     if (error) { showToast('Could not connect to database'); showSetup(false); return; }
     allSessions = data || [];
     
-    const hash = window.location.hash;
+    if (allSessions.length > 0) {
+      try {
+        const { data: rData } = await db.from('rounds')
+          .select('session_id, scores, phase, is_complete')
+          .in('session_id', allSessions.map(s => s.id));
+        allSessionsRoundsMap = {};
+        (rData || []).forEach(r => {
+          if (!allSessionsRoundsMap[r.session_id]) allSessionsRoundsMap[r.session_id] = [];
+          allSessionsRoundsMap[r.session_id].push(r);
+        });
+      } catch (e) {
+        console.warn('Could not prefetch rounds for ticker:', e);
+      }
+    }
+    updateTickerWithWallOfShame();
     if (hash.startsWith('#audit')) {
       const filterId = hash.replace('#audit-', '');
       await showAuditScreen(filterId === '#audit' ? null : filterId, false);
@@ -1457,11 +1674,17 @@ function renderSavedSessionsMini() {
   const list    = document.getElementById('saved-sessions-list');
   if (!allSessions.length) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
-  list.innerHTML = allSessions.slice(0, 3).map(s => `
-    <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center justify-between">
-      <p class="font-semibold text-sm">${esc(s.name)}</p>
+  list.innerHTML = allSessions.slice(0, 3).map(s => {
+    const isClosed = isSessionClosed(s);
+    return `
+    <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center justify-between ${isClosed ? 'opacity-80' : ''}">
+      <div class="flex items-center gap-2">
+        <p class="font-semibold text-sm">${esc(s.name)}</p>
+        ${isClosed ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-600/30 text-slate-300 border border-slate-500/30">🔒 ${t('badge_closed')}</span>` : ''}
+      </div>
       <p class="text-xs text-[var(--muted-foreground)]">${s.players.join(', ')}</p>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function startGame() {
@@ -1490,6 +1713,8 @@ async function startGame() {
 
   const data = res.data;
   allSessions.unshift(data);
+  allSessionsRoundsMap[data.id] = [];
+  updateTickerWithWallOfShame();
   document.getElementById('input-session').value = '';
   inputs.forEach(i => i.value = '');
   openSession(data.id);
@@ -1511,8 +1736,11 @@ async function renderSessionsList(sessions) {
     if (!roundsMap[r.session_id]) roundsMap[r.session_id] = [];
     roundsMap[r.session_id].push(r);
   });
+  allSessionsRoundsMap = roundsMap;
+  updateTickerWithWallOfShame();
 
   list.innerHTML = sessions.map(s => {
+    const isClosed   = isSessionClosed(s);
     const sRounds    = roundsMap[s.id] || [];
     const totals     = calcTotals(s, sRounds);
     const ranked     = s.players.map((name, i) => ({ name, total: totals[i], idx: i }))
@@ -1532,14 +1760,22 @@ async function renderSessionsList(sessions) {
     });
 
     return `
-      <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm relative group">
+      <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm relative group ${isClosed ? 'opacity-85 border-slate-700/60 bg-slate-900/20' : ''}">
         <div class="flex items-start justify-between mb-3 gap-2">
           <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-base truncate hover:text-[var(--primary)] transition-colors">${esc(s.name)}</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-base truncate hover:text-[var(--primary)] transition-colors">${esc(s.name)}</h3>
+              ${isClosed ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-600/30 text-slate-300 border border-slate-500/40 shrink-0">🔒 ${t('badge_closed')}</span>` : ''}
+            </div>
             <p class="text-xs text-[var(--muted-foreground)]">${subtitle}</p>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
+            <button onclick="event.stopPropagation(); toggleCloseSession('${s.id}')"
+                    class="text-xs text-[var(--muted-foreground)] hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
+                    title="${isClosed ? t('session_btn_reopen') : t('session_btn_close')}">
+              ${isClosed ? '🔓' : '🔒'}
+            </button>
             <button onclick="event.stopPropagation(); confirmDeleteSession('${s.id}')"
                     class="text-xs text-[var(--muted-foreground)] hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
                     title="${t('game_btn_delete')}">
@@ -1601,6 +1837,8 @@ async function openSession(id, push = true) {
     }
     activeSession = session;
     activeRounds  = rounds || [];
+    allSessionsRoundsMap[id] = activeRounds;
+    updateTickerWithWallOfShame();
     hide('screen-setup'); hide('screen-sessions'); hide('screen-audit'); show('screen-game');
     updateNavActiveState('game');
     renderGame();
@@ -1622,6 +1860,7 @@ function renderGame() {
   const rtIdx    = getCurrentRTIndex(session);        // sticky RT from last phase end
   const calonIdx = getCalonRTIndex(session, rounds);  // current last-place
   const isCasino = (currentTheme === 'casino');
+  const isClosed = isSessionClosed(session);
 
   document.getElementById('game-title').textContent = session.name;
   const doneCount = rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).length;
@@ -1630,6 +1869,22 @@ function renderGame() {
     rounds: doneCount,
     players: formatDateTime(session.created_at)
   });
+
+  // Closed badge and Toggle button in header
+  const closedBadge = document.getElementById('game-closed-badge');
+  if (closedBadge) {
+    closedBadge.classList.toggle('hidden', !isClosed);
+    closedBadge.textContent = t('badge_closed');
+  }
+
+  const toggleBtnIcon = document.getElementById('btn-toggle-close-icon');
+  const toggleBtnLabel = document.getElementById('btn-toggle-close-label');
+  if (toggleBtnIcon) toggleBtnIcon.textContent = isClosed ? '🔓' : '🔒';
+  if (toggleBtnLabel) toggleBtnLabel.textContent = isClosed ? t('session_btn_reopen') : t('session_btn_close');
+
+  // Closed banner
+  const closedBanner = document.getElementById('game-closed-banner');
+  if (closedBanner) closedBanner.classList.toggle('hidden', !isClosed);
 
   // Phase info badges
   const phaseBadges = document.getElementById('phase-badges');
@@ -1662,8 +1917,8 @@ function renderGame() {
       </div>`;
   }).join('');
 
-  // Pending round
-  const pendingRound = rounds.find(r => !r.is_complete && (r.phase ?? 1) === phase);
+  // Pending round (hidden if session is closed)
+  const pendingRound = isClosed ? null : rounds.find(r => !r.is_complete && (r.phase ?? 1) === phase);
   if (pendingRound) {
     const submitted = session.players.filter((_, i) => pendingRound.scores?.[i] != null);
     const waiting   = session.players.filter((_, i) => pendingRound.scores?.[i] == null);
@@ -1674,18 +1929,36 @@ function renderGame() {
     hide('pending-banner');
   }
 
+  // Score section subtitles
+  const scoreTitle = document.getElementById('game-enter-score-title');
+  const scoreSub   = document.getElementById('game-enter-score-sub');
+  if (scoreTitle) {
+    scoreTitle.textContent = isClosed 
+      ? (currentLang === 'id' ? '🎴 SKOR AKHIR PEMAIN (TERKUNCI)' : '🎴 FINAL PLAYER SCORES (LOCKED)')
+      : t('game_enter_score_title');
+  }
+  if (scoreSub) {
+    scoreSub.textContent = isClosed
+      ? (currentLang === 'id' ? 'Meja ini telah ditutup. Skor terkunci dalam mode hanya-lihat.' : 'This table is closed. Scores are frozen in read-only mode.')
+      : t('game_enter_score_sub');
+  }
+
   // Player cards
   const colors = isCasino ? ['from-amber-500/20','from-cyan-500/20','from-purple-500/20','from-emerald-500/20'] : ['','','',''];
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
-    const submitted = pendingRound && pendingRound.scores?.[i] != null;
+    const submitted = !isClosed && pendingRound && pendingRound.scores?.[i] != null;
     const isRT      = i === rtIdx;
     const isCalon   = hasScoreDiff && totals[i] === minTotal;
     const isFirst   = hasScoreDiff && totals[i] === maxTotal;
     const bgGrad    = isCasino ? `bg-gradient-to-b ${colors[i]} to-transparent` : '';
     const borderGlow = (isFirst && isCasino) ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : '';
+    const clickHandler = isClosed ? '' : (submitted ? '' : `openModal(${i})`);
+    const cardCursor = isClosed ? 'cursor-default opacity-85' : 'cursor-pointer card-hover';
+    const bottomLabel = isClosed ? `🔒 ${t('badge_closed')}` : (submitted ? t('game_submitted_badge') : t('game_tap_badge'));
+
     return `
-      <div onclick="${submitted ? '' : `openModal(${i})`}"
-        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm ${bgGrad} flex flex-col justify-between ${submitted ? 'submitted-card' : ''} ${borderGlow}">
+      <div onclick="${clickHandler}"
+        class="${cardCursor} bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm ${bgGrad} flex flex-col justify-between ${submitted ? 'submitted-card' : ''} ${borderGlow}">
         <div>
           <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2 shadow-md">
             ${esc(name.charAt(0).toUpperCase())}
@@ -1700,7 +1973,7 @@ function renderGame() {
         </div>
         <div>
           <p class="font-bold font-digital text-xl mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
-          <p class="text-[11px] text-[var(--muted-foreground)] mt-2 border-t border-[var(--border)]/40 pt-2 font-medium">${submitted ? t('game_submitted_badge') : t('game_tap_badge')}</p>
+          <p class="text-[11px] text-[var(--muted-foreground)] mt-2 border-t border-[var(--border)]/40 pt-2 font-medium">${bottomLabel}</p>
         </div>
       </div>`;
   }).join('');
@@ -1795,11 +2068,19 @@ function renderHistory(session, rounds) {
   }
   emptyEl.classList.add('hidden');
 
+  const isClosed = isSessionClosed(session);
+
   body.innerHTML = phaseRounds.map((r, idx) => `
     <tr class="border-t border-[var(--border)] hover:bg-[var(--secondary)]/20 transition-colors">
       <td class="px-3 py-2.5 text-[var(--muted-foreground)] font-medium text-xs">${idx + 1}</td>
       ${session.players.map((_, pi) => {
         const s = r.scores?.[pi] ?? 0;
+        if (isClosed) {
+          return `
+            <td class="px-2 py-2 font-semibold text-center ${scoreColor(s)} cursor-default">
+              <span class="inline-block px-1 py-0.5 font-digital">${fmtScore(s)}</span>
+            </td>`;
+        }
         return `
           <td onclick="openEditScoreModal('${r.id}', ${idx + 1}, ${pi}, ${s})"
             title="Click to edit score"
@@ -1808,11 +2089,12 @@ function renderHistory(session, rounds) {
           </td>`;
       }).join('')}
       <td class="px-1 py-2 text-center">
+        ${isClosed ? '<span class="text-slate-600 text-xs">—</span>' : `
         <button onclick="confirmDeleteRound('${r.id}', ${idx + 1})"
           title="Delete round ${idx + 1}"
           class="text-xs text-[var(--muted-foreground)] hover:text-red-400 p-1 opacity-25 hover:opacity-100 transition-opacity">
           ✕
-        </button>
+        </button>`}
       </td>
     </tr>
   `).join('');
@@ -1826,6 +2108,7 @@ function toggleHistory() {
 
 // ── Edit Score / Delete Round ─────────────────────────────
 function openEditScoreModal(roundId, roundIdx, playerIdx, currentScore) {
+  if (isSessionClosed(activeSession)) return;
   editRoundId   = roundId;
   editPlayerIdx = playerIdx;
   const roundWord = currentLang === 'id' ? 'Putaran' : 'Round';
@@ -1852,6 +2135,7 @@ function setEditScore(v) {
 }
 
 async function saveEditedScore() {
+  if (isSessionClosed(activeSession)) return;
   const targetId        = editRoundId;
   const targetPlayerIdx = editPlayerIdx;
   if (!targetId || targetPlayerIdx === null || targetPlayerIdx === undefined) return;
@@ -1894,6 +2178,9 @@ async function saveEditedScore() {
       activeRounds.push(data);
     }
 
+    allSessionsRoundsMap[activeSessionId] = activeRounds;
+    updateTickerWithWallOfShame();
+
     showToast(t('toast_score_updated'), 'success');
 
     // Audit logging
@@ -1930,6 +2217,7 @@ async function saveEditedScore() {
 }
 
 function confirmDeleteRound(roundId, roundNum) {
+  if (isSessionClosed(activeSession)) return;
   deletingRoundId = roundId;
   document.getElementById('delete-round-desc').textContent = t('modal_del_round_desc', { round: roundNum });
   show('modal-delete-round');
@@ -1941,6 +2229,7 @@ function closeDeleteRoundModal() {
 }
 
 async function executeDeleteRound() {
+  if (isSessionClosed(activeSession)) return;
   if (!deletingRoundId) return;
   const idToDelete = deletingRoundId;
   closeDeleteRoundModal();
@@ -1952,6 +2241,9 @@ async function executeDeleteRound() {
     if (error) throw error;
 
     activeRounds = activeRounds.filter(r => String(r.id) !== String(idToDelete));
+    allSessionsRoundsMap[activeSessionId] = activeRounds;
+    updateTickerWithWallOfShame();
+
     showToast(t('toast_round_deleted'), 'success');
 
     // Audit logging
@@ -1985,6 +2277,7 @@ async function executeDeleteRound() {
 
 // ── Score Modal ───────────────────────────────────────────
 function openModal(playerIdx) {
+  if (isSessionClosed(activeSession)) return;
   modalPlayerIdx = playerIdx;
   document.getElementById('modal-player-name').textContent = activeSession.players[playerIdx];
   document.getElementById('modal-score-input').value = '';
@@ -1996,6 +2289,7 @@ function closeModal() { hide('modal-score'); modalPlayerIdx = null; }
 function setScore(v)  { document.getElementById('modal-score-input').value = v; }
 
 async function submitScore() {
+  if (isSessionClosed(activeSession)) return;
   const raw   = document.getElementById('modal-score-input').value.trim();
   const errEl = document.getElementById('modal-error');
   if (!raw)         { showErr(errEl, t('err_score_enter')); return; }
@@ -2043,6 +2337,9 @@ async function submitScore() {
         showToast('Failed to save score: ' + (ins.error?.message || ''));
       }
     }
+
+    allSessionsRoundsMap[activeSessionId] = activeRounds;
+    updateTickerWithWallOfShame();
 
     // Audit logging for score entry
     const playerName = activeSession.players[pi] || 'Player';
@@ -2099,7 +2396,14 @@ function showRTModal() {
 
 function dismissRTModal() { hide('modal-rt'); rtTriggerPlayers = []; }
 
+async function closeSessionFromRTModal() {
+  hide('modal-rt');
+  rtTriggerPlayers = [];
+  await toggleCloseSession(activeSessionId);
+}
+
 async function startNewPhase() {
+  if (isSessionClosed(activeSession)) return;
   const scoringPhase = getScoringPhase(activeSession, activeRounds);
   const calonIdx     = getCalonRTIndex(activeSession, activeRounds); // this becomes new RT
   const nextPhase    = scoringPhase + 1;
@@ -2124,6 +2428,11 @@ async function startNewPhase() {
     .update({ rt_players: updatedRtPlayers }).eq('id', activeSessionId);
   if (!error) {
     activeSession.rt_players = updatedRtPlayers;
+    const targetSess = allSessions.find(x => x.id === activeSessionId);
+    if (targetSess) targetSess.rt_players = updatedRtPlayers;
+    allSessionsRoundsMap[activeSessionId] = activeRounds;
+    updateTickerWithWallOfShame();
+
     logAuditAction({
       session_id: activeSessionId,
       session_name: activeSession.name,
@@ -2191,6 +2500,9 @@ async function deleteSession() {
   if (error) { showToast('Failed to delete session'); closeConfirm(); return; }
 
   allSessions = allSessions.filter(s => s.id !== targetId);
+  delete allSessionsRoundsMap[targetId];
+  updateTickerWithWallOfShame();
+
   if (activeSessionId === targetId) {
     activeSessionId = null;
     activeSession = null;
@@ -2509,6 +2821,12 @@ function renderAuditList(logs, isCloudActive) {
     } else if (l.action === 'NEW_PHASE') {
       actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">${t('audit_action_new_phase')}</span>`;
       actionDesc = `<p class="mt-1 text-xs text-purple-300">${currentLang === 'id' ? `Fase ${l.phase} dimulai · Pak RT Baru: <b>${esc(l.player_name || '')}</b>` : `Phase ${l.phase} started · New Pak RT: <b>${esc(l.player_name || '')}</b>`}</p>`;
+    } else if (l.action === 'CLOSE_SESSION') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-500/20 text-slate-300 border border-slate-500/30">${t('audit_action_close_session')}</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-slate-300">${currentLang === 'id' ? `Meja <b>${esc(l.session_name || 'Meja')}</b> ditutup (selesai)` : `Session <b>${esc(l.session_name || 'Session')}</b> closed`}</p>`;
+    } else if (l.action === 'REOPEN_SESSION') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${t('audit_action_reopen_session')}</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-emerald-300">${currentLang === 'id' ? `Meja <b>${esc(l.session_name || 'Meja')}</b> dibuka kembali` : `Session <b>${esc(l.session_name || 'Session')}</b> reopened`}</p>`;
     } else {
       actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">ℹ️ ${esc(l.action)}</span>`;
       actionDesc = `<p class="mt-1 text-xs text-[var(--muted-foreground)]">${esc(l.details?.description || '')}</p>`;
