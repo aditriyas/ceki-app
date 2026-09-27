@@ -572,12 +572,13 @@ function renderGame() {
                                 .sort((a, b) => b.total - a.total);
   const medals = ['🏆','🥈','🥉','4️⃣'];
   document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => {
-    const isFirst = hasScoreDiff && p.total === maxTotal && rank === 0;
+    const isFirst = hasScoreDiff && p.total === maxTotal;
     const isRT    = p.idx === rtIdx;
-    const isCalon = hasScoreDiff && p.idx === calonIdx;
+    const isCalon = hasScoreDiff && p.total === minTotal;
+    const medalIcon = hasScoreDiff ? (p.total === maxTotal ? '🏆' : medals[rank]) : '•';
     return `
       <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-'+(rank+1) : 'pl-5'}">
-        <span class="text-lg w-6 text-center">${hasScoreDiff ? medals[rank] : '•'}</span>
+        <span class="text-lg w-6 text-center">${medalIcon}</span>
         <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
           <p class="font-semibold text-sm">${esc(p.name)}</p>
           ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>'  : ''}
@@ -605,8 +606,8 @@ function renderGame() {
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
     const submitted = pendingRound && pendingRound.scores?.[i] != null;
     const isRT      = i === rtIdx;
-    const isCalon   = hasScoreDiff && i === calonIdx;
-    const isFirst   = hasScoreDiff && ranked[0].idx === i && ranked[0].total === maxTotal;
+    const isCalon   = hasScoreDiff && totals[i] === minTotal;
+    const isFirst   = hasScoreDiff && totals[i] === maxTotal;
     return `
       <div onclick="${submitted ? '' : `openModal(${i})`}"
         class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent flex flex-col justify-between ${submitted ? 'submitted-card' : ''}">
