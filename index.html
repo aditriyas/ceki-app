@@ -51,6 +51,23 @@
     .badge-winning { background: rgba(74,222,128,.15);  color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
     .badge-rt      { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
     .badge-calon   { background: rgba(251,191,36,.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+    .badge-phase   { background: rgba(124,106,247,.15); color: #a78bfa; border: 1px solid rgba(124,106,247,.3); }
+
+    /* Odoo 19 compact tag style */
+    .odoo-tag {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1.25;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .tag-winning { background: rgba(74,222,128,.14); color: #4ade80; border: 1px solid rgba(74,222,128,.28); }
+    .tag-rt      { background: rgba(248,113,113,.14); color: #f87171; border: 1px solid rgba(248,113,113,.28); }
+    .tag-calon   { background: rgba(251,191,36,.14);  color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
   </style>
 </head>
 <body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen">
@@ -408,6 +425,9 @@ async function renderSessionsList(sessions) {
     const rtIdx      = getCurrentRTIndex(s);          // sticky RT from last phase
     const calonIdx   = getCalonRTIndex(s, sRounds);   // current last-place
     const doneCount  = sRounds.filter(r => r.is_complete && (r.phase??1) === curPhase).length;
+    const maxTotal   = Math.max(...totals);
+    const minTotal   = Math.min(...totals);
+    const hasScoreDiff = doneCount > 0 && maxTotal !== minTotal;
 
     return `
       <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm">
@@ -420,22 +440,21 @@ async function renderSessionsList(sessions) {
         </div>
         <div class="grid grid-cols-4 gap-1.5 items-stretch">
           ${ranked.map((p, idx) => {
-            const isFirst  = idx === 0;
+            const isFirst  = hasScoreDiff && p.total === maxTotal && idx === 0;
             const isRT     = p.idx === rtIdx;
-            const isCalon  = p.idx === calonIdx;
-            const hasBadge = isFirst || isRT || isCalon;
+            const isCalon  = hasScoreDiff && p.idx === calonIdx;
             return `
-              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl py-2 px-1 ${isFirst ? 'border border-yellow-500/40' : 'border border-transparent'}">
+              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl p-2 min-h-[78px] ${isFirst ? 'border border-yellow-500/40' : 'border border-transparent'}">
                 <div>
-                  <p class="text-[11px] truncate text-[var(--muted-foreground)] font-medium mb-1">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
-                  <p class="font-bold text-sm ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+                  <p class="text-[11px] truncate text-[var(--foreground)] font-medium">${hasScoreDiff ? ['🏆','🥈','🥉',''][idx] : ''} ${esc(p.name)}</p>
+                  <!-- Odoo 19 style tag below name -->
+                  <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
+                    ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>' : ''}
+                    ${isRT    ? '<span class="odoo-tag tag-rt">RT</span>' : ''}
+                    ${isCalon ? '<span class="odoo-tag tag-calon">Calon RT</span>' : ''}
+                  </div>
                 </div>
-                <div class="min-h-[24px] flex items-center justify-center gap-1 mt-1.5 flex-wrap">
-                  ${isFirst ? '<span class="badge badge-winning text-[9px] px-1.5 py-0.5">Winning</span>' : ''}
-                  ${isRT    ? '<span class="badge badge-rt text-[9px] px-1.5 py-0.5">RT</span>' : ''}
-                  ${isCalon ? '<span class="badge badge-calon text-[9px] px-1.5 py-0.5">Calon RT</span>' : ''}
-                  ${!hasBadge ? '<span class="invisible text-[9px] select-none py-0.5">-</span>' : ''}
-                </div>
+                <p class="font-bold text-sm mt-auto ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
               </div>`;
           }).join('')}
         </div>
@@ -477,21 +496,25 @@ function renderGame() {
     ? `<span class="badge badge-phase">Phase ${phase}</span>` : '';
 
   // Leaderboard
+  const maxTotal  = Math.max(...totals);
+  const minTotal  = Math.min(...totals);
+  const hasScoreDiff = doneCount > 0 && maxTotal !== minTotal;
+
   const ranked = session.players.map((name, i) => ({ name, total: totals[i], idx: i }))
                                 .sort((a, b) => b.total - a.total);
   const medals = ['🏆','🥈','🥉','4️⃣'];
   document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => {
-    const isFirst = rank === 0;
+    const isFirst = hasScoreDiff && p.total === maxTotal && rank === 0;
     const isRT    = p.idx === rtIdx;
-    const isCalon = p.idx === calonIdx; // can stack with RT badge
+    const isCalon = hasScoreDiff && p.idx === calonIdx;
     return `
       <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-'+(rank+1) : 'pl-5'}">
-        <span class="text-lg w-6 text-center">${medals[rank]}</span>
+        <span class="text-lg w-6 text-center">${hasScoreDiff ? medals[rank] : '•'}</span>
         <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
           <p class="font-semibold text-sm">${esc(p.name)}</p>
-          ${isFirst ? '<span class="badge badge-winning">Winning</span>'  : ''}
-          ${isRT    ? '<span class="badge badge-rt">RT</span>'            : ''}
-          ${isCalon ? '<span class="badge badge-calon">Calon RT</span>'   : ''}
+          ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>'  : ''}
+          ${isRT    ? '<span class="odoo-tag tag-rt">RT</span>'            : ''}
+          ${isCalon ? '<span class="odoo-tag tag-calon">Calon RT</span>'   : ''}
         </div>
         <p class="font-bold text-base ${scoreColor(p.total)} shrink-0">${fmtScore(p.total)}</p>
       </div>`;
@@ -514,9 +537,8 @@ function renderGame() {
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
     const submitted = pendingRound && pendingRound.scores?.[i] != null;
     const isRT      = i === rtIdx;
-    const isCalon   = i === calonIdx;
-    const isFirst   = ranked[0].idx === i;
-    const hasBadge  = isFirst || isRT || isCalon;
+    const isCalon   = hasScoreDiff && i === calonIdx;
+    const isFirst   = hasScoreDiff && ranked[0].idx === i && ranked[0].total === maxTotal;
     return `
       <div onclick="${submitted ? '' : `openModal(${i})`}"
         class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent flex flex-col justify-between ${submitted ? 'submitted-card' : ''}">
@@ -525,15 +547,15 @@ function renderGame() {
             ${esc(name.charAt(0).toUpperCase())}
           </div>
           <p class="font-semibold text-sm truncate">${esc(name)}</p>
-          <p class="font-bold text-xl mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
+          <!-- Odoo 19 style tag right below name -->
+          <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
+            ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>' : ''}
+            ${isRT    ? '<span class="odoo-tag tag-rt">RT</span>' : ''}
+            ${isCalon ? '<span class="odoo-tag tag-calon">Calon RT</span>' : ''}
+          </div>
         </div>
         <div>
-          <div class="min-h-[24px] flex items-center justify-center gap-1 mt-2 flex-wrap">
-            ${isFirst ? '<span class="badge badge-winning text-[9px] px-1.5 py-0.5">Winning</span>' : ''}
-            ${isRT    ? '<span class="badge badge-rt text-[9px] px-1.5 py-0.5">RT</span>' : ''}
-            ${isCalon ? '<span class="badge badge-calon text-[9px] px-1.5 py-0.5">Calon RT</span>' : ''}
-            ${!hasBadge ? '<span class="invisible text-[9px] select-none py-0.5">-</span>' : ''}
-          </div>
+          <p class="font-bold text-xl mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
           <p class="text-[11px] text-[var(--muted-foreground)] mt-2 border-t border-[var(--border)]/40 pt-2">${submitted ? '✓ Submitted' : 'Tap to enter score'}</p>
         </div>
       </div>`;
