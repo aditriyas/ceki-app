@@ -292,7 +292,7 @@ function getMaxRoundPhase(rounds) {
 
 function getScoringPhase(session, rounds) {
   const maxPhase = getMaxRoundPhase(rounds);
-  const hadRT    = (session.rt_players || []).some(rt => rt.phase === maxPhase);
+  const hadRT    = (session.rt_players || []).some(rt => rt.phase === maxPhase || rt.phase === maxPhase + 1);
   const hasNext  = rounds.some(r => (r.phase ?? 1) > maxPhase);
   return (hadRT && !hasNext) ? maxPhase + 1 : maxPhase;
 }
@@ -325,10 +325,17 @@ function getCurrentRTIndex(session) {
   return entry ? entry.player_idx : null;
 }
 
-// Pak RT recorded for a specific past phase (for history display)
+// Pak RT recorded for a specific phase (Phase 1 never has RT, RT serves in Phase 2, 3...)
 function getRTForPhase(session, phase) {
-  const entry = (session.rt_players || []).find(e => e.phase === phase);
-  return entry ? entry.player_idx : null;
+  if (phase <= 1) return null; // Phase 1 never has an RT
+  const arr = session.rt_players || [];
+  // Match direct phase (e.g. Phase 2)
+  const entry = arr.find(e => e.phase === phase);
+  if (entry) return entry.player_idx;
+  // Fallback for sessions where it was saved with ending phase (phase - 1)
+  const legacy = arr.find(e => e.phase === phase - 1);
+  if (legacy) return legacy.player_idx;
+  return null;
 }
 
 // ── Loading / Toast ───────────────────────────────────────
@@ -845,13 +852,12 @@ function dismissRTModal() { hide('modal-rt'); rtTriggerPlayers = []; }
 async function startNewPhase() {
   const scoringPhase = getScoringPhase(activeSession, activeRounds);
   const calonIdx     = getCalonRTIndex(activeSession, activeRounds); // this becomes new RT
+  const nextPhase    = scoringPhase + 1;
 
-  // Build new rt_players: replace last entry OR append
-  // Only keep ONE RT at a time (most recent phase)
-  // But we keep history of all phases for the history table
+  // Calon RT becomes Pak RT for the next phase
   const updatedRtPlayers = [
     ...(activeSession.rt_players || []),
-    { phase: scoringPhase, player_idx: calonIdx }
+    { phase: nextPhase, player_idx: calonIdx }
   ];
 
   showLoading('Starting new phase...');
