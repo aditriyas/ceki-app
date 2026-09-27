@@ -654,43 +654,58 @@ async function submitScore() {
   const pi           = modalPlayerIdx;
   const scoringPhase = getScoringPhase(activeSession, activeRounds);
   const pendingRound = activeRounds.find(r => !r.is_complete && (r.phase ?? 1) === scoringPhase);
+  const roundNum     = activeRounds.filter(r => r.is_complete && (r.phase ?? 1) === scoringPhase).length + 1;
 
   closeModal();
   showLoading('Saving...');
 
-  if (pendingRound) {
-    const newScores = { ...pendingRound.scores, [pi]: score };
-    const allFilled = activeSession.players.every((_, i) => newScores[i] != null);
-    const { data, error } = await db.from('rounds')
-      .update({ scores: newScores, is_complete: allFilled })
-      .eq('id', pendingRound.id).select().single();
-    if (!error) { const idx = activeRounds.findIndex(r => r.id === pendingRound.id); activeRounds[idx] = data; }
-    else showToast('Failed to save score');
-  } else {
-    let ins = await db.from('rounds').insert({
-      session_id: activeSessionId, scores: { [pi]: score },
-      round_number: roundNum, is_complete: false, phase: scoringPhase
-    }).select().single();
-    if (ins.error && ins.error.message && (ins.error.message.includes('phase') || ins.error.code === '42703')) {
-      ins = await db.from('rounds').insert({
+  try {
+    if (pendingRound) {
+      const newScores = { ...pendingRound.scores, [pi]: score };
+      const allFilled = activeSession.players.every((_, i) => newScores[i] != null);
+      const { data, error } = await db.from('rounds')
+        .update({ scores: newScores, is_complete: allFilled })
+        .eq('id', pendingRound.id).select().single();
+      if (!error && data) {
+        const idx = activeRounds.findIndex(r => r.id === pendingRound.id);
+        activeRounds[idx] = data;
+      } else {
+        console.error('Update round error:', error);
+        showToast('Failed to save score');
+      }
+    } else {
+      let ins = await db.from('rounds').insert({
         session_id: activeSessionId, scores: { [pi]: score },
-        round_number: roundNum, is_complete: false
+        round_number: roundNum, is_complete: false, phase: scoringPhase
       }).select().single();
+      if (ins.error && ins.error.message && (ins.error.message.includes('phase') || ins.error.code === '42703')) {
+        ins = await db.from('rounds').insert({
+          session_id: activeSessionId, scores: { [pi]: score },
+          round_number: roundNum, is_complete: false
+        }).select().single();
+      }
+      if (!ins.error && ins.data) {
+        activeRounds.push(ins.data);
+      } else {
+        console.error('Insert round error:', ins.error);
+        showToast('Failed to save score: ' + (ins.error?.message || ''));
+      }
     }
-    if (!ins.error) activeRounds.push(ins.data);
-    else showToast('Failed to save score: ' + (ins.error.message || ''));
+
+    // Check RT (≥1000) condition
+    const newTotals = calcTotals(activeSession, activeRounds);
+    rtTriggerPlayers = activeSession.players
+      .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
+      .filter(p => p.total >= 1000);
+
+    if (rtTriggerPlayers.length > 0) showRTModal();
+    else renderGame();
+  } catch (err) {
+    console.error('submitScore error:', err);
+    showToast('Error: ' + err.message);
+  } finally {
+    hideLoading();
   }
-
-  hideLoading();
-
-  // Check RT (≥1000) condition
-  const newTotals = calcTotals(activeSession, activeRounds);
-  rtTriggerPlayers = activeSession.players
-    .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
-    .filter(p => p.total >= 1000);
-
-  if (rtTriggerPlayers.length > 0) showRTModal();
-  else renderGame();
 }
 
 // ── RT Modal ──────────────────────────────────────────────
