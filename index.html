@@ -861,6 +861,10 @@ function setEditScore(v) {
 }
 
 async function saveEditedScore() {
+  const targetId        = editRoundId;
+  const targetPlayerIdx = editPlayerIdx;
+  if (!targetId || targetPlayerIdx === null || targetPlayerIdx === undefined) return;
+
   const raw   = document.getElementById('modal-edit-score-input').value.trim();
   const errEl = document.getElementById('modal-edit-error');
   if (!raw) { showErr(errEl, 'Please enter a score'); return; }
@@ -872,10 +876,10 @@ async function saveEditedScore() {
   showLoading('Updating score...');
 
   try {
-    let targetRound = activeRounds.find(r => String(r.id) === String(editRoundId));
-    if (!targetRound && editRoundId) {
+    let targetRound = activeRounds.find(r => String(r.id) === String(targetId));
+    if (!targetRound && targetId) {
       // Fallback: fetch directly from Supabase if not present in memory
-      const { data: dbRound, error: fetchErr } = await db.from('rounds').select('*').eq('id', editRoundId).single();
+      const { data: dbRound, error: fetchErr } = await db.from('rounds').select('*').eq('id', targetId).single();
       if (dbRound && !fetchErr) {
         targetRound = dbRound;
         activeRounds.push(dbRound);
@@ -883,15 +887,15 @@ async function saveEditedScore() {
     }
     if (!targetRound) throw new Error('Round not found');
 
-    const updatedScores = { ...(targetRound.scores || {}), [editPlayerIdx]: score };
+    const updatedScores = { ...(targetRound.scores || {}), [targetPlayerIdx]: score };
     const { data, error } = await db.from('rounds')
       .update({ scores: updatedScores })
-      .eq('id', editRoundId)
+      .eq('id', targetId)
       .select().single();
 
     if (error) throw error;
 
-    const idx = activeRounds.findIndex(r => String(r.id) === String(editRoundId));
+    const idx = activeRounds.findIndex(r => String(r.id) === String(targetId));
     if (idx !== -1) {
       activeRounds[idx] = data;
     } else {
@@ -899,7 +903,15 @@ async function saveEditedScore() {
     }
 
     showToast('Score updated!', 'success');
-    renderGame();
+
+    // Check if updated score triggers 1000 RT condition
+    const newTotals = calcTotals(activeSession, activeRounds);
+    rtTriggerPlayers = activeSession.players
+      .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
+      .filter(p => p.total >= 1000);
+
+    if (rtTriggerPlayers.length > 0) showRTModal();
+    else renderGame();
   } catch (err) {
     console.error('saveEditedScore error:', err);
     showToast('Failed to update: ' + err.message);
