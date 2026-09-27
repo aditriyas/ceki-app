@@ -166,8 +166,17 @@
       <button onclick="toggleHistory()" id="btn-toggle-history" class="text-xs text-[var(--primary)] hover:opacity-80">Show</button>
     </div>
     <div id="history-section" class="hidden">
+      <!-- Phase Tabs Container -->
+      <div id="history-phase-tabs" class="px-4 py-2.5 border-b border-[var(--border)] bg-[var(--background)]/50 flex items-center gap-2 overflow-x-auto"></div>
+      
+      <!-- Phase Info Banner -->
+      <div id="history-phase-info" class="px-4 py-2 text-xs flex items-center justify-between border-b border-[var(--border)]/40 bg-[var(--secondary)]/20 hidden"></div>
+
       <div class="overflow-x-auto">
-        <table class="w-full text-xs"><tbody id="history-body"></tbody></table>
+        <table class="w-full text-xs">
+          <thead><tr id="history-header" class="border-b border-[var(--border)] bg-[var(--background)]"></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
       </div>
       <div id="history-empty" class="hidden text-center text-[var(--muted-foreground)] py-6 text-sm">No rounds yet</div>
     </div>
@@ -273,6 +282,7 @@ let historyVisible   = false;
 let modalPlayerIdx   = null;
 let allSessions      = [];
 let rtTriggerPlayers = []; // players who just hit ≥1000
+let selectedHistoryPhase = null;
 
 // ── Phase Helpers ─────────────────────────────────────────
 function getMaxRoundPhase(rounds) {
@@ -635,55 +645,97 @@ function renderGame() {
   document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
 }
 
+function selectHistoryPhase(phase) {
+  selectedHistoryPhase = phase;
+  renderHistory(activeSession, activeRounds);
+}
+
 function renderHistory(session, rounds) {
+  const tabsEl  = document.getElementById('history-phase-tabs');
+  const infoEl  = document.getElementById('history-phase-info');
+  const header  = document.getElementById('history-header');
   const body    = document.getElementById('history-body');
   const emptyEl = document.getElementById('history-empty');
-  const done    = rounds.filter(r => r.is_complete);
-  if (!done.length) { body.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+
+  const done     = rounds.filter(r => r.is_complete);
+  const curPhase = getScoringPhase(session, rounds);
+
+  // Discover all phases
+  const phaseSet = new Set(done.map(r => r.phase ?? 1));
+  phaseSet.add(curPhase);
+  (session.rt_players || []).forEach(rt => { if (rt.phase) phaseSet.add(rt.phase); });
+  const phases = Array.from(phaseSet).map(Number).sort((a,b) => a - b);
+
+  if (!selectedHistoryPhase || !phases.includes(selectedHistoryPhase)) {
+    selectedHistoryPhase = curPhase;
+  }
+
+  // Render Phase Tabs
+  if (phases.length <= 1) {
+    tabsEl.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-[var(--foreground)]">Phase 1</span>
+        <span class="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Active</span>
+      </div>`;
+  } else {
+    tabsEl.innerHTML = `
+      <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 w-full">
+        ${phases.map(p => {
+          const isSelected = p === selectedHistoryPhase;
+          const isCur      = p === curPhase;
+          return `
+            <button onclick="selectHistoryPhase(${p})"
+              class="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shrink-0
+                ${isSelected
+                  ? 'bg-[var(--primary)] text-white shadow-sm'
+                  : 'bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}">
+              <span>Phase ${p}</span>
+              ${isCur ? '<span class="text-[9px] px-1.5 py-0.2 rounded-md bg-white/20 font-bold">Active</span>' : ''}
+            </button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  const phaseRounds   = done.filter(r => (r.phase ?? 1) === selectedHistoryPhase);
+  const rtIdxForPhase = getRTForPhase(session, selectedHistoryPhase);
+
+  // Info banner (RT of this phase)
+  const rtName = (rtIdxForPhase !== null && session.players[rtIdxForPhase])
+    ? session.players[rtIdxForPhase] : null;
+
+  infoEl.innerHTML = `
+    <span class="text-[var(--muted-foreground)] font-medium">Phase ${selectedHistoryPhase} · ${phaseRounds.length} rounds played</span>
+    ${rtName ? `<span class="badge badge-rt text-[10px]">Pak RT: ${esc(rtName)}</span>` : ''}
+  `;
+  infoEl.classList.remove('hidden');
+
+  // Column header — highlight RT of this specific phase
+  header.innerHTML = `<th class="text-left px-4 py-2.5 text-[var(--muted-foreground)] font-semibold w-12">Round</th>` +
+    session.players.map((p, pi) => {
+      const isRT = pi === rtIdxForPhase;
+      return `<th class="px-3 py-2.5 text-[var(--muted-foreground)] font-semibold whitespace-nowrap text-center">
+        ${esc(p)}${isRT ? ' <span class="badge badge-rt" style="font-size:9px;padding:1px 5px">RT</span>' : ''}
+      </th>`;
+    }).join('');
+
+  // Table Body
+  if (!phaseRounds.length) {
+    body.innerHTML = '';
+    emptyEl.textContent = `No completed rounds in Phase ${selectedHistoryPhase} yet`;
+    emptyEl.classList.remove('hidden');
+    return;
+  }
   emptyEl.classList.add('hidden');
 
-  const phaseMap = {};
-  done.forEach(r => { const p = r.phase ?? 1; if (!phaseMap[p]) phaseMap[p] = []; phaseMap[p].push(r); });
-  const phases     = Object.keys(phaseMap).map(Number).sort((a,b) => a-b);
-  const multiPhase = phases.length > 1;
-  let html = '';
-
-  phases.forEach(phase => {
-    const phaseRounds   = phaseMap[phase];
-    const rtIdxForPhase = getRTForPhase(session, phase); // sticky RT recorded when this phase ended
-
-    if (multiPhase) {
-      const rtName = rtIdxForPhase !== null ? session.players[rtIdxForPhase] : '—';
-      html += `<tr class="bg-[var(--accent)]">
-        <td colspan="${session.players.length + 1}" class="px-4 py-1.5">
-          <span class="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider mr-2">Phase ${phase}</span>
-          <span class="badge badge-rt">RT: ${esc(rtName)}</span>
-        </td></tr>`;
-    }
-
-    // Column header — mark the RT player for this phase
-    html += `<tr class="border-b border-[var(--border)] bg-[var(--background)]">
-      <th class="text-left px-4 py-2 text-[var(--muted-foreground)] font-semibold w-10">Round</th>
-      ${session.players.map((p, pi) => {
-        const isRT = pi === rtIdxForPhase;
-        return `<th class="px-3 py-2 text-[var(--muted-foreground)] font-semibold whitespace-nowrap">
-          ${esc(p)}${isRT ? ' <span class="badge badge-rt" style="font-size:9px;padding:1px 5px">RT</span>' : ''}
-        </th>`;
+  body.innerHTML = phaseRounds.map((r, idx) => `
+    <tr class="border-t border-[var(--border)] hover:bg-[var(--background)] transition-colors">
+      <td class="px-4 py-2.5 text-[var(--muted-foreground)] font-medium">${idx + 1}</td>
+      ${session.players.map((_, pi) => {
+        const s = r.scores?.[pi] ?? 0;
+        return `<td class="px-3 py-2.5 font-semibold text-center ${scoreColor(s)}">${fmtScore(s)}</td>`;
       }).join('')}
-    </tr>`;
-
-    phaseRounds.forEach((r, idx) => {
-      html += `<tr class="border-t border-[var(--border)] hover:bg-[var(--background)] transition-colors">
-        <td class="px-4 py-2.5 text-[var(--muted-foreground)] font-medium">${idx + 1}</td>
-        ${session.players.map((_, pi) => {
-          const s = r.scores?.[pi] ?? 0;
-          return `<td class="px-3 py-2.5 font-semibold text-center ${scoreColor(s)}">${fmtScore(s)}</td>`;
-        }).join('')}
-      </tr>`;
-    });
-  });
-
-  body.innerHTML = html;
+    </tr>
+  `).join('');
 }
 
 function toggleHistory() {
