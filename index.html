@@ -385,14 +385,22 @@ async function startGame() {
   if (!name)                                    { showErr(errEl, 'Session name cannot be empty'); return; }
   if (players.some(p => !p))                    { showErr(errEl, 'All player names must be filled in'); return; }
   if (new Set(players).size !== players.length) { showErr(errEl, 'Player names must be unique'); return; }
-  errEl.classList.add('hidden');
-
   showLoading('Creating session...');
-  const { data, error } = await db.from('sessions')
-    .insert({ name, players, rt_players: [] }).select().single();
-  hideLoading();
-  if (error) { showErr(errEl, 'Failed to create session.'); return; }
+  let res = await db.from('sessions').insert({ name, players, rt_players: [] }).select().single();
+  
+  // Fallback if rt_players column doesn't exist yet in Supabase
+  if (res.error && res.error.message && (res.error.message.includes('rt_players') || res.error.code === '42703')) {
+    res = await db.from('sessions').insert({ name, players }).select().single();
+  }
 
+  hideLoading();
+  if (res.error) {
+    console.error('Session create error:', res.error);
+    showErr(errEl, res.error.message || 'Failed to create session.');
+    return;
+  }
+
+  const data = res.data;
   allSessions.unshift(data);
   document.getElementById('input-session').value = '';
   inputs.forEach(i => i.value = '');
@@ -659,13 +667,18 @@ async function submitScore() {
     if (!error) { const idx = activeRounds.findIndex(r => r.id === pendingRound.id); activeRounds[idx] = data; }
     else showToast('Failed to save score');
   } else {
-    const roundNum  = activeRounds.filter(r => r.is_complete && (r.phase??1) === scoringPhase).length + 1;
-    const { data, error } = await db.from('rounds').insert({
+    let ins = await db.from('rounds').insert({
       session_id: activeSessionId, scores: { [pi]: score },
       round_number: roundNum, is_complete: false, phase: scoringPhase
     }).select().single();
-    if (!error) activeRounds.push(data);
-    else showToast('Failed to save score');
+    if (ins.error && ins.error.message && (ins.error.message.includes('phase') || ins.error.code === '42703')) {
+      ins = await db.from('rounds').insert({
+        session_id: activeSessionId, scores: { [pi]: score },
+        round_number: roundNum, is_complete: false
+      }).select().single();
+    }
+    if (!ins.error) activeRounds.push(ins.data);
+    else showToast('Failed to save score: ' + (ins.error.message || ''));
   }
 
   hideLoading();
