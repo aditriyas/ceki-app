@@ -17,6 +17,7 @@
       --primary-foreground:   #ffffff;
       --secondary:            #23263a;
       --secondary-foreground: #c0c4d6;
+      --accent:               #1e2133;
       color-scheme: dark;
     }
     .card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
@@ -24,8 +25,8 @@
     .modal-overlay { backdrop-filter: blur(4px); }
     .score-positive { color: #4ade80; }
     .score-negative { color: #f87171; }
-    .score-zero { color: var(--muted-foreground); }
-    .player-badge { background: linear-gradient(135deg, #7c6af7, #a78bfa); }
+    .score-zero     { color: var(--muted-foreground); }
+    .player-badge   { background: linear-gradient(135deg, #7c6af7, #a78bfa); }
     .rank-1 { border-color: #f59e0b; }
     .rank-2 { border-color: #94a3b8; }
     .rank-3 { border-color: #cd7c4e; }
@@ -42,20 +43,25 @@
       font-size: 13px; font-weight: 500; white-space: nowrap;
       animation: fadeSlideIn 0.2s ease;
     }
-    .toast-error   { background: #ef4444; color: white; }
-    .toast-success { background: #22c55e; color: white; }
+    .toast-error   { background: #ef4444; color: #fff; }
+    .toast-success { background: #22c55e; color: #fff; }
     .submitted-card { opacity: 0.5; pointer-events: none; }
+    /* Badge system */
+    .badge         { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; display: inline-block; line-height: 1.5; white-space: nowrap; }
+    .badge-winning { background: rgba(74,222,128,.15);  color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+    .badge-rt      { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+    .badge-calon   { background: rgba(251,191,36,.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
   </style>
 </head>
 <body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen">
 
-<!-- ── Loading Overlay ── -->
+<!-- Loading Overlay -->
 <div id="loading-overlay" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm">
   <div class="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mb-3"></div>
   <p id="loading-msg" class="text-sm text-[var(--muted-foreground)]">Loading...</p>
 </div>
 
-<!-- ── Setup Screen ── -->
+<!-- Setup Screen -->
 <div id="screen-setup" class="hidden min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md anim-in">
     <div class="text-center mb-8">
@@ -72,10 +78,10 @@
       <div class="mb-6">
         <label class="block text-sm font-semibold mb-2">Player Names <span class="text-[var(--muted-foreground)] font-normal">(4 players)</span></label>
         <div class="space-y-2.5">
-          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 1" data-idx="0" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
-          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 2" data-idx="1" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
-          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 3" data-idx="2" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
-          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 4" data-idx="3" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 1" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 2" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 3" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 4" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
         </div>
       </div>
       <div id="setup-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
@@ -90,7 +96,7 @@
   </div>
 </div>
 
-<!-- ── Sessions List Screen ── -->
+<!-- Sessions List Screen -->
 <div id="screen-sessions" class="hidden min-h-screen p-4 max-w-lg mx-auto">
   <div class="flex items-center justify-between mb-6 pt-2">
     <div>
@@ -104,37 +110,36 @@
   <div id="sessions-list" class="space-y-3"></div>
 </div>
 
-<!-- ── Game Screen ── -->
+<!-- Game Screen -->
 <div id="screen-game" class="hidden min-h-screen p-4 max-w-lg mx-auto">
   <div class="flex items-center gap-3 mb-5 pt-2">
     <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
     <div class="flex-1">
       <h2 id="game-title" class="text-xl font-bold truncate"></h2>
-      <p id="game-round-count" class="text-xs text-[var(--muted-foreground)]"></p>
+      <p id="game-subtitle" class="text-xs text-[var(--muted-foreground)]"></p>
     </div>
-    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 transition-colors px-2 py-1">🗑</button>
+    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 px-2 py-1">🗑</button>
   </div>
 
-  <!-- Leaderboard -->
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-4 shadow-sm">
-    <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3">📊 Scoreboard</p>
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">📊 Scoreboard</p>
+      <div class="flex gap-2" id="phase-badges"></div>
+    </div>
     <div id="leaderboard" class="space-y-2"></div>
   </div>
 
-  <!-- Pending round status -->
   <div id="pending-banner" class="hidden mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
     <p class="text-xs font-semibold text-yellow-400 mb-1">⏳ Round in progress</p>
     <p id="pending-status" class="text-xs text-[var(--muted-foreground)]"></p>
   </div>
 
-  <!-- Player Cards -->
   <div class="mb-4">
     <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3">🎴 Enter Round Score</p>
     <p class="text-xs text-[var(--muted-foreground)] mb-3">Tap a player's card to enter their score</p>
     <div id="player-cards" class="grid grid-cols-2 gap-3"></div>
   </div>
 
-  <!-- Round History -->
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm mb-6">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
       <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">📋 Round History</p>
@@ -142,17 +147,14 @@
     </div>
     <div id="history-section" class="hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-xs">
-          <thead><tr id="history-header" class="border-b border-[var(--border)] bg-[var(--background)]"></tr></thead>
-          <tbody id="history-body"></tbody>
-        </table>
+        <table class="w-full text-xs"><tbody id="history-body"></tbody></table>
       </div>
       <div id="history-empty" class="hidden text-center text-[var(--muted-foreground)] py-6 text-sm">No rounds yet</div>
     </div>
   </div>
 </div>
 
-<!-- ── Score Modal ── -->
+<!-- Score Modal -->
 <div id="modal-score" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/40">
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
     <div class="flex items-center justify-between mb-4">
@@ -170,12 +172,12 @@
     </div>
     <p class="text-xs text-[var(--muted-foreground)] mb-4 text-center">Positive = win, Negative = loss</p>
     <div class="flex gap-2 flex-wrap justify-center mb-4">
-      <button onclick="setScore(-100)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-100</button>
-      <button onclick="setScore(-50)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-50</button>
-      <button onclick="setScore(-25)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-25</button>
-      <button onclick="setScore(25)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+25</button>
-      <button onclick="setScore(50)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+50</button>
-      <button onclick="setScore(100)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+100</button>
+      <button onclick="setScore(-100)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20">-100</button>
+      <button onclick="setScore(-50)"  class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20">-50</button>
+      <button onclick="setScore(-25)"  class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20">-25</button>
+      <button onclick="setScore(25)"   class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20">+25</button>
+      <button onclick="setScore(50)"   class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20">+50</button>
+      <button onclick="setScore(100)"  class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20">+100</button>
     </div>
     <div id="modal-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
     <div class="flex gap-2">
@@ -185,7 +187,42 @@
   </div>
 </div>
 
-<!-- ── Confirm Delete Modal ── -->
+<!-- RT / New Phase Modal -->
+<div id="modal-rt" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/60">
+  <div class="bg-[var(--card)] border border-red-500/40 rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-2">🎰</div>
+      <h3 class="font-bold text-xl">Skor 1000!</h3>
+    </div>
+
+    <!-- Who hit 1000 -->
+    <div id="rt-hit-list" class="mb-4 space-y-2"></div>
+
+    <!-- Calon RT → RT transition -->
+    <div class="bg-[var(--accent)] border border-[var(--border)] rounded-xl p-4 mb-5">
+      <div class="flex items-center justify-between">
+        <div class="text-center flex-1">
+          <p class="text-xs text-[var(--muted-foreground)] mb-1">Calon RT sekarang</p>
+          <p id="rt-modal-calon" class="font-bold text-yellow-400 text-base"></p>
+        </div>
+        <div class="text-[var(--muted-foreground)] text-xl px-2">→</div>
+        <div class="text-center flex-1">
+          <p class="text-xs text-[var(--muted-foreground)] mb-1">Jadi RT fase baru</p>
+          <p id="rt-modal-rt" class="font-bold text-red-400 text-base"></p>
+        </div>
+      </div>
+      <p class="text-xs text-center text-[var(--muted-foreground)] mt-3">🃏 Ngocok kartu untuk fase berikutnya</p>
+    </div>
+
+    <p class="text-xs text-center text-[var(--muted-foreground)] mb-5">Mulai fase baru? Semua skor direset ke 0.</p>
+    <div class="flex gap-2">
+      <button onclick="dismissRTModal()" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Dismiss</button>
+      <button onclick="startNewPhase()" class="flex-1 bg-red-500 text-white font-semibold rounded-xl py-2.5 text-sm hover:bg-red-600 active:scale-[0.98] transition-all">New Phase 🔄</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
 <div id="modal-confirm" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/40">
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
     <div class="text-center mb-4">
@@ -201,31 +238,76 @@
 </div>
 
 <script>
-// ── Supabase Init ──────────────────────────────────────────
+// ── Supabase ──────────────────────────────────────────────
 const { createClient } = supabase;
 const db = createClient(
   'https://qqwuejojwxofvqoendpe.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxd3Vlam9qd3hvZnZxb2VuZHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTMwNTcsImV4cCI6MjEwNjA2OTA1N30.7XR5chlhYWqMkHHCu8FkXY_rBLudKA260BgN26z87O4'
 );
 
-// ── State ──────────────────────────────────────────────────
-let activeSessionId = null;
-let activeSession   = null;
-let activeRounds    = [];
-let historyVisible  = false;
-let modalPlayerIdx  = null;
-let allSessions     = [];
+// ── State ─────────────────────────────────────────────────
+let activeSessionId  = null;
+let activeSession    = null;
+let activeRounds     = [];
+let historyVisible   = false;
+let modalPlayerIdx   = null;
+let allSessions      = [];
+let rtTriggerPlayers = []; // players who just hit ≥1000
 
-// ── Loading ────────────────────────────────────────────────
+// ── Phase Helpers ─────────────────────────────────────────
+function getMaxRoundPhase(rounds) {
+  if (!rounds || !rounds.length) return 1;
+  return Math.max(...rounds.map(r => r.phase ?? 1));
+}
+
+function getScoringPhase(session, rounds) {
+  const maxPhase = getMaxRoundPhase(rounds);
+  const hadRT    = (session.rt_players || []).some(rt => rt.phase === maxPhase);
+  const hasNext  = rounds.some(r => (r.phase ?? 1) > maxPhase);
+  return (hadRT && !hasNext) ? maxPhase + 1 : maxPhase;
+}
+
+function calcTotals(session, rounds) {
+  const phase = getScoringPhase(session, rounds);
+  return session.players.map((_, pi) =>
+    rounds.filter(r => (r.phase ?? 1) === phase)
+          .reduce((sum, r) => sum + (r.scores?.[pi] ?? 0), 0)
+  );
+}
+
+// ── RT Label Logic ────────────────────────────────────────
+// "Calon RT" = current last-place in active phase (dynamic)
+function getCalonRTIndex(session, rounds) {
+  const totals = calcTotals(session, rounds);
+  let minVal = Infinity, minIdx = 0;
+  totals.forEach((t, i) => { if (t < minVal) { minVal = t; minIdx = i; } });
+  return minIdx;
+}
+
+// "RT" = sticky label from the MOST RECENT phase that ended
+// stored as the last entry in session.rt_players
+function getCurrentRTIndex(session) {
+  const arr = session.rt_players || [];
+  if (!arr.length) return null;
+  // Most recent phase
+  const maxPhase = Math.max(...arr.map(e => e.phase));
+  const entry    = arr.find(e => e.phase === maxPhase);
+  return entry ? entry.player_idx : null;
+}
+
+// Pak RT recorded for a specific past phase (for history display)
+function getRTForPhase(session, phase) {
+  const entry = (session.rt_players || []).find(e => e.phase === phase);
+  return entry ? entry.player_idx : null;
+}
+
+// ── Loading / Toast ───────────────────────────────────────
 function showLoading(msg = 'Loading...') {
   document.getElementById('loading-msg').textContent = msg;
   document.getElementById('loading-overlay').classList.remove('hidden');
 }
-function hideLoading() {
-  document.getElementById('loading-overlay').classList.add('hidden');
-}
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
 
-// ── Toast ──────────────────────────────────────────────────
 function showToast(msg, type = 'error') {
   const t = document.createElement('div');
   t.className = `toast toast-${type}`;
@@ -234,56 +316,41 @@ function showToast(msg, type = 'error') {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ── Screens ────────────────────────────────────────────────
+// ── Screen Helpers ────────────────────────────────────────
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
 function showSetup() {
-  hide('screen-sessions');
-  hide('screen-game');
+  hide('screen-sessions'); hide('screen-game');
   show('screen-setup');
   renderSavedSessionsMini();
 }
-
 function showSessionsScreen() {
-  hide('screen-setup');
-  hide('screen-game');
+  hide('screen-setup'); hide('screen-game');
   show('screen-sessions');
 }
-
 function goBack() {
   hide('screen-game');
-  if (allSessions.length > 0) {
-    showSessionsScreen();
-    renderSessionsList(allSessions);
-  } else {
-    showSetup();
-  }
+  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
+  else showSetup();
 }
 
-// ── Init ───────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────
 async function init() {
-  showLoading('Connecting to database...');
-  const { data, error } = await db
-    .from('sessions')
-    .select('*')
-    .order('created_at', { ascending: false });
+  showLoading('Connecting...');
+  const { data, error } = await db.from('sessions').select('*').order('created_at', { ascending: false });
   hideLoading();
   if (error) { showToast('Could not connect to database'); show('screen-setup'); return; }
   allSessions = data || [];
-  if (allSessions.length > 0) {
-    showSessionsScreen();
-    renderSessionsList(allSessions);
-  } else {
-    showSetup();
-  }
+  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
+  else showSetup();
 }
 
-// ── Setup ──────────────────────────────────────────────────
+// ── Setup ─────────────────────────────────────────────────
 function renderSavedSessionsMini() {
   const section = document.getElementById('saved-sessions-section');
   const list    = document.getElementById('saved-sessions-list');
-  if (allSessions.length === 0) { section.classList.add('hidden'); return; }
+  if (!allSessions.length) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
   list.innerHTML = allSessions.slice(0, 3).map(s => `
     <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center justify-between">
@@ -293,20 +360,21 @@ function renderSavedSessionsMini() {
 }
 
 async function startGame() {
-  const sessionName = document.getElementById('input-session').value.trim();
+  const name    = document.getElementById('input-session').value.trim();
   const inputs  = document.querySelectorAll('.player-name-input');
   const players = Array.from(inputs).map(i => i.value.trim());
   const errEl   = document.getElementById('setup-error');
 
-  if (!sessionName)                              { showErr(errEl, 'Session name cannot be empty'); return; }
+  if (!name)                                    { showErr(errEl, 'Session name cannot be empty'); return; }
   if (players.some(p => !p))                    { showErr(errEl, 'All player names must be filled in'); return; }
   if (new Set(players).size !== players.length) { showErr(errEl, 'Player names must be unique'); return; }
   errEl.classList.add('hidden');
 
   showLoading('Creating session...');
-  const { data, error } = await db.from('sessions').insert({ name: sessionName, players }).select().single();
+  const { data, error } = await db.from('sessions')
+    .insert({ name, players, rt_players: [] }).select().single();
   hideLoading();
-  if (error) { showErr(errEl, 'Failed to create session. Try again.'); return; }
+  if (error) { showErr(errEl, 'Failed to create session.'); return; }
 
   allSessions.unshift(data);
   document.getElementById('input-session').value = '';
@@ -314,20 +382,17 @@ async function startGame() {
   openSession(data.id);
 }
 
-// ── Sessions List ──────────────────────────────────────────
+// ── Sessions List ─────────────────────────────────────────
 async function renderSessionsList(sessions) {
   const list = document.getElementById('sessions-list');
-  if (sessions.length === 0) {
+  if (!sessions.length) {
     list.innerHTML = `<div class="text-center text-[var(--muted-foreground)] py-12">
       <div class="text-4xl mb-3">🀄</div>
-      <p class="text-sm">No sessions yet. Create a new one!</p>
-    </div>`;
+      <p class="text-sm">No sessions yet. Create a new one!</p></div>`;
     return;
   }
-
-  // Fetch all rounds for these sessions to calc totals
-  const ids = sessions.map(s => s.id);
-  const { data: rounds } = await db.from('rounds').select('session_id, scores').in('session_id', ids);
+  const { data: rounds } = await db.from('rounds')
+    .select('session_id, scores, phase, is_complete').in('session_id', sessions.map(s => s.id));
   const roundsMap = {};
   (rounds || []).forEach(r => {
     if (!roundsMap[r.session_id]) roundsMap[r.session_id] = [];
@@ -335,133 +400,186 @@ async function renderSessionsList(sessions) {
   });
 
   list.innerHTML = sessions.map(s => {
-    const sRounds  = roundsMap[s.id] || [];
-    const totals   = calcTotals(s, sRounds);
-    const ranked   = s.players.map((name, i) => ({ name, total: totals[i] })).sort((a, b) => b.total - a.total);
+    const sRounds    = roundsMap[s.id] || [];
+    const totals     = calcTotals(s, sRounds);
+    const ranked     = s.players.map((name, i) => ({ name, total: totals[i], idx: i }))
+                                .sort((a, b) => b.total - a.total);
+    const curPhase   = getScoringPhase(s, sRounds);
+    const rtIdx      = getCurrentRTIndex(s);          // sticky RT from last phase
+    const calonIdx   = getCalonRTIndex(s, sRounds);   // current last-place
+    const doneCount  = sRounds.filter(r => r.is_complete && (r.phase??1) === curPhase).length;
+
     return `
       <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm">
         <div class="flex items-start justify-between mb-3">
           <div>
             <h3 class="font-bold text-base">${esc(s.name)}</h3>
-            <p class="text-xs text-[var(--muted-foreground)]">${sRounds.filter(r=>r.is_complete).length ?? sRounds.length} rounds · ${s.players.join(', ')}</p>
+            <p class="text-xs text-[var(--muted-foreground)]">Phase ${curPhase} · ${doneCount} rounds · ${s.players.join(', ')}</p>
           </div>
           <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDate(s.created_at)}</span>
         </div>
         <div class="grid grid-cols-4 gap-1.5">
-          ${ranked.map((p, idx) => `
-            <div class="text-center bg-[var(--background)] rounded-lg py-2 px-1 ${idx===0?'border border-yellow-500/40':''}">
-              <p class="text-xs truncate text-[var(--muted-foreground)]">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
-              <p class="font-bold text-sm mt-0.5 ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
-            </div>`).join('')}
+          ${ranked.map((p, idx) => {
+            const isFirst  = idx === 0;
+            const isRT     = p.idx === rtIdx;
+            const isCalon  = p.idx === calonIdx; // can stack with RT badge
+            return `
+              <div class="text-center bg-[var(--background)] rounded-lg py-2 px-1 ${isFirst ? 'border border-yellow-500/40' : ''}">
+                <p class="text-xs truncate text-[var(--muted-foreground)] mb-1">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
+                ${isFirst ? '<span class="badge badge-winning">Winning</span>' : ''}
+                ${isRT    ? '<span class="badge badge-rt">RT</span>' : ''}
+                ${isCalon ? '<span class="badge badge-calon">Calon RT</span>' : ''}
+                <p class="font-bold text-sm mt-1 ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+              </div>`;
+          }).join('')}
         </div>
       </div>`;
   }).join('');
 }
 
-// ── Game Screen ────────────────────────────────────────────
+// ── Game Screen ───────────────────────────────────────────
 async function openSession(id) {
-  activeSessionId = id;
-  historyVisible  = false;
+  activeSessionId = id; historyVisible = false;
   showLoading('Loading session...');
-
   const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
     db.from('sessions').select('*').eq('id', id).single(),
-    db.from('rounds').select('*').eq('session_id', id).order('round_number', { ascending: true })
+    db.from('rounds').select('*').eq('session_id', id).order('created_at', { ascending: true })
   ]);
   hideLoading();
-
   if (e1 || e2) { showToast('Failed to load session'); return; }
   activeSession = session;
   activeRounds  = rounds || [];
-
-  hide('screen-setup');
-  hide('screen-sessions');
-  show('screen-game');
+  hide('screen-setup'); hide('screen-sessions'); show('screen-game');
   renderGame();
 }
 
-function calcTotals(session, rounds) {
-  return session.players.map((_, pi) =>
-    rounds.reduce((sum, r) => sum + (r.scores?.[pi] ?? 0), 0)
-  );
-}
-
 function renderGame() {
-  const session = activeSession;
-  const rounds  = activeRounds;
+  const session  = activeSession;
+  const rounds   = activeRounds;
+  const phase    = getScoringPhase(session, rounds);
+  const totals   = calcTotals(session, rounds);
+  const rtIdx    = getCurrentRTIndex(session);        // sticky RT from last phase end
+  const calonIdx = getCalonRTIndex(session, rounds);  // current last-place
 
-  document.getElementById('game-title').textContent      = session.name;
-  const completeRounds = rounds.filter(r => r.is_complete);
-  document.getElementById('game-round-count').textContent = `${completeRounds.length} rounds played`;
+  // Header
+  document.getElementById('game-title').textContent = session.name;
+  const doneCount = rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).length;
+  document.getElementById('game-subtitle').textContent = `Phase ${phase} · ${doneCount} rounds played`;
 
-  const totals = calcTotals(session, rounds);
-  const ranked = session.players.map((name, i) => ({ name, total: totals[i], idx: i }))
-    .sort((a, b) => b.total - a.total);
+  // Phase info badges
+  const phaseBadges = document.getElementById('phase-badges');
+  phaseBadges.innerHTML = (session.rt_players || []).length > 0
+    ? `<span class="badge badge-phase">Phase ${phase}</span>` : '';
 
   // Leaderboard
+  const ranked = session.players.map((name, i) => ({ name, total: totals[i], idx: i }))
+                                .sort((a, b) => b.total - a.total);
   const medals = ['🏆','🥈','🥉','4️⃣'];
-  document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => `
-    <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-' + (rank+1) : 'pl-5'}">
-      <span class="text-lg w-6 text-center">${medals[rank]}</span>
-      <div class="flex-1"><p class="font-semibold text-sm">${esc(p.name)}</p></div>
-      <p class="font-bold text-base ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
-    </div>`).join('');
+  document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => {
+    const isFirst = rank === 0;
+    const isRT    = p.idx === rtIdx;
+    const isCalon = p.idx === calonIdx; // can stack with RT badge
+    return `
+      <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-'+(rank+1) : 'pl-5'}">
+        <span class="text-lg w-6 text-center">${medals[rank]}</span>
+        <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
+          <p class="font-semibold text-sm">${esc(p.name)}</p>
+          ${isFirst ? '<span class="badge badge-winning">Winning</span>'  : ''}
+          ${isRT    ? '<span class="badge badge-rt">RT</span>'            : ''}
+          ${isCalon ? '<span class="badge badge-calon">Calon RT</span>'   : ''}
+        </div>
+        <p class="font-bold text-base ${scoreColor(p.total)} shrink-0">${fmtScore(p.total)}</p>
+      </div>`;
+  }).join('');
 
   // Pending round
-  const pendingRound = rounds.find(r => !r.is_complete);
-  const pendingBanner = document.getElementById('pending-banner');
+  const pendingRound = rounds.find(r => !r.is_complete && (r.phase ?? 1) === phase);
   if (pendingRound) {
-    const submitted = session.players.filter((_, i) => pendingRound.scores?.[i] !== undefined && pendingRound.scores?.[i] !== null);
-    const waiting   = session.players.filter((_, i) => pendingRound.scores?.[i] === undefined || pendingRound.scores?.[i] === null);
+    const submitted = session.players.filter((_, i) => pendingRound.scores?.[i] != null);
+    const waiting   = session.players.filter((_, i) => pendingRound.scores?.[i] == null);
     document.getElementById('pending-status').textContent =
       `Submitted: ${submitted.join(', ')} · Waiting: ${waiting.join(', ')}`;
-    pendingBanner.classList.remove('hidden');
+    show('pending-banner');
   } else {
-    pendingBanner.classList.add('hidden');
+    hide('pending-banner');
   }
 
   // Player cards
   const colors = ['from-blue-500/20','from-purple-500/20','from-pink-500/20','from-orange-500/20'];
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
-    const alreadySubmitted = pendingRound && pendingRound.scores?.[i] !== undefined && pendingRound.scores?.[i] !== null;
+    const submitted = pendingRound && pendingRound.scores?.[i] != null;
+    const isRT      = i === rtIdx;
+    const isCalon   = i === calonIdx; // can stack with RT badge
     return `
-      <div onclick="${alreadySubmitted ? '' : `openModal(${i})`}"
-        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent ${alreadySubmitted ? 'submitted-card' : ''}">
+      <div onclick="${submitted ? '' : `openModal(${i})`}"
+        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent ${submitted ? 'submitted-card' : ''}">
         <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">
           ${esc(name.charAt(0).toUpperCase())}
         </div>
         <p class="font-semibold text-sm truncate">${esc(name)}</p>
-        <p class="font-bold text-lg mt-0.5 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
-        <p class="text-xs text-[var(--muted-foreground)] mt-1">${alreadySubmitted ? '✓ Submitted' : 'Tap to enter score'}</p>
+        <div class="flex gap-1 justify-center mt-1 min-h-[20px]">
+          ${isRT    ? '<span class="badge badge-rt">RT</span>'          : ''}
+          ${isCalon ? '<span class="badge badge-calon">Calon RT</span>' : ''}
+        </div>
+        <p class="font-bold text-lg mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
+        <p class="text-xs text-[var(--muted-foreground)] mt-1">${submitted ? '✓ Submitted' : 'Tap to enter score'}</p>
       </div>`;
   }).join('');
 
-  // History
   renderHistory(session, rounds);
   document.getElementById('btn-toggle-history').textContent = historyVisible ? 'Hide' : 'Show';
   document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
 }
 
 function renderHistory(session, rounds) {
-  const header  = document.getElementById('history-header');
   const body    = document.getElementById('history-body');
   const emptyEl = document.getElementById('history-empty');
-
-  header.innerHTML = `<th class="text-left px-4 py-2 text-[var(--muted-foreground)] font-semibold w-10">Round</th>` +
-    session.players.map(p => `<th class="px-3 py-2 text-[var(--muted-foreground)] font-semibold">${esc(p)}</th>`).join('');
-
-  const completeRounds = rounds.filter(r => r.is_complete);
-  if (completeRounds.length === 0) { body.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+  const done    = rounds.filter(r => r.is_complete);
+  if (!done.length) { body.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
   emptyEl.classList.add('hidden');
 
-  body.innerHTML = completeRounds.map((r, idx) => `
-    <tr class="border-t border-[var(--border)] hover:bg-[var(--background)] transition-colors">
-      <td class="px-4 py-2.5 text-[var(--muted-foreground)] font-medium">${idx + 1}</td>
-      ${session.players.map((_, pi) => {
-        const s = r.scores?.[pi] ?? 0;
-        return `<td class="px-3 py-2.5 font-semibold text-center ${scoreColor(s)}">${fmtScore(s)}</td>`;
+  const phaseMap = {};
+  done.forEach(r => { const p = r.phase ?? 1; if (!phaseMap[p]) phaseMap[p] = []; phaseMap[p].push(r); });
+  const phases     = Object.keys(phaseMap).map(Number).sort((a,b) => a-b);
+  const multiPhase = phases.length > 1;
+  let html = '';
+
+  phases.forEach(phase => {
+    const phaseRounds   = phaseMap[phase];
+    const rtIdxForPhase = getRTForPhase(session, phase); // sticky RT recorded when this phase ended
+
+    if (multiPhase) {
+      const rtName = rtIdxForPhase !== null ? session.players[rtIdxForPhase] : '—';
+      html += `<tr class="bg-[var(--accent)]">
+        <td colspan="${session.players.length + 1}" class="px-4 py-1.5">
+          <span class="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider mr-2">Phase ${phase}</span>
+          <span class="badge badge-rt">RT: ${esc(rtName)}</span>
+        </td></tr>`;
+    }
+
+    // Column header — mark the RT player for this phase
+    html += `<tr class="border-b border-[var(--border)] bg-[var(--background)]">
+      <th class="text-left px-4 py-2 text-[var(--muted-foreground)] font-semibold w-10">Round</th>
+      ${session.players.map((p, pi) => {
+        const isRT = pi === rtIdxForPhase;
+        return `<th class="px-3 py-2 text-[var(--muted-foreground)] font-semibold whitespace-nowrap">
+          ${esc(p)}${isRT ? ' <span class="badge badge-rt" style="font-size:9px;padding:1px 5px">RT</span>' : ''}
+        </th>`;
       }).join('')}
-    </tr>`).join('');
+    </tr>`;
+
+    phaseRounds.forEach((r, idx) => {
+      html += `<tr class="border-t border-[var(--border)] hover:bg-[var(--background)] transition-colors">
+        <td class="px-4 py-2.5 text-[var(--muted-foreground)] font-medium">${idx + 1}</td>
+        ${session.players.map((_, pi) => {
+          const s = r.scores?.[pi] ?? 0;
+          return `<td class="px-3 py-2.5 font-semibold text-center ${scoreColor(s)}">${fmtScore(s)}</td>`;
+        }).join('')}
+      </tr>`;
+    });
+  });
+
+  body.innerHTML = html;
 }
 
 function toggleHistory() {
@@ -470,7 +588,7 @@ function toggleHistory() {
   document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
 }
 
-// ── Score Modal ────────────────────────────────────────────
+// ── Score Modal ───────────────────────────────────────────
 function openModal(playerIdx) {
   modalPlayerIdx = playerIdx;
   document.getElementById('modal-player-name').textContent = activeSession.players[playerIdx];
@@ -480,54 +598,108 @@ function openModal(playerIdx) {
   setTimeout(() => document.getElementById('modal-score-input').focus(), 100);
 }
 function closeModal() { hide('modal-score'); modalPlayerIdx = null; }
-function setScore(val) { document.getElementById('modal-score-input').value = val; }
+function setScore(v)  { document.getElementById('modal-score-input').value = v; }
 
 async function submitScore() {
   const raw   = document.getElementById('modal-score-input').value.trim();
   const errEl = document.getElementById('modal-error');
-  if (raw === '')          { showErr(errEl, 'Please enter a score'); return; }
+  if (!raw)         { showErr(errEl, 'Please enter a score'); return; }
   const score = parseInt(raw, 10);
-  if (isNaN(score))        { showErr(errEl, 'Score must be a number'); return; }
+  if (isNaN(score)) { showErr(errEl, 'Score must be a number'); return; }
   errEl.classList.add('hidden');
 
   const pi           = modalPlayerIdx;
-  const numPlayers   = activeSession.players.length;
-  const pendingRound = activeRounds.find(r => !r.is_complete);
+  const scoringPhase = getScoringPhase(activeSession, activeRounds);
+  const pendingRound = activeRounds.find(r => !r.is_complete && (r.phase ?? 1) === scoringPhase);
 
   closeModal();
   showLoading('Saving...');
 
   if (pendingRound) {
     const newScores = { ...pendingRound.scores, [pi]: score };
-    const allFilled = activeSession.players.every((_, i) => newScores[i] !== undefined && newScores[i] !== null);
+    const allFilled = activeSession.players.every((_, i) => newScores[i] != null);
     const { data, error } = await db.from('rounds')
       .update({ scores: newScores, is_complete: allFilled })
       .eq('id', pendingRound.id).select().single();
-    if (!error) {
-      const idx = activeRounds.findIndex(r => r.id === pendingRound.id);
-      activeRounds[idx] = data;
-    } else {
-      showToast('Failed to save score');
-    }
+    if (!error) { const idx = activeRounds.findIndex(r => r.id === pendingRound.id); activeRounds[idx] = data; }
+    else showToast('Failed to save score');
   } else {
-    const roundNum  = activeRounds.filter(r => r.is_complete).length + 1;
-    const newScores = { [pi]: score };
-    const allFilled = numPlayers === 1;
+    const roundNum  = activeRounds.filter(r => r.is_complete && (r.phase??1) === scoringPhase).length + 1;
     const { data, error } = await db.from('rounds').insert({
-      session_id:   activeSessionId,
-      scores:       newScores,
-      round_number: roundNum,
-      is_complete:  allFilled
+      session_id: activeSessionId, scores: { [pi]: score },
+      round_number: roundNum, is_complete: false, phase: scoringPhase
     }).select().single();
     if (!error) activeRounds.push(data);
     else showToast('Failed to save score');
   }
 
   hideLoading();
+
+  // Check RT (≥1000) condition
+  const newTotals = calcTotals(activeSession, activeRounds);
+  rtTriggerPlayers = activeSession.players
+    .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
+    .filter(p => p.total >= 1000);
+
+  if (rtTriggerPlayers.length > 0) showRTModal();
+  else renderGame();
+}
+
+// ── RT Modal ──────────────────────────────────────────────
+function showRTModal() {
+  // Players who hit 1000
+  document.getElementById('rt-hit-list').innerHTML = rtTriggerPlayers.map(p => `
+    <div class="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+      <span class="font-semibold">${esc(p.name)}</span>
+      <span class="font-bold text-red-400">${fmtScore(p.total)}</span>
+    </div>`).join('');
+
+  // Calon RT (current last-place) → will become new RT
+  const calonIdx = getCalonRTIndex(activeSession, activeRounds);
+  const calonName = activeSession.players[calonIdx];
+  document.getElementById('rt-modal-calon').textContent = calonName;
+  document.getElementById('rt-modal-rt').textContent    = calonName;
+
+  show('modal-rt');
   renderGame();
 }
 
-// ── Delete ─────────────────────────────────────────────────
+function dismissRTModal() { hide('modal-rt'); rtTriggerPlayers = []; }
+
+async function startNewPhase() {
+  const scoringPhase = getScoringPhase(activeSession, activeRounds);
+  const calonIdx     = getCalonRTIndex(activeSession, activeRounds); // this becomes new RT
+
+  // Build new rt_players: replace last entry OR append
+  // Only keep ONE RT at a time (most recent phase)
+  // But we keep history of all phases for the history table
+  const updatedRtPlayers = [
+    ...(activeSession.rt_players || []),
+    { phase: scoringPhase, player_idx: calonIdx }
+  ];
+
+  showLoading('Starting new phase...');
+
+  // Close any incomplete round in current phase
+  const pending = activeRounds.find(r => !r.is_complete && (r.phase ?? 1) === scoringPhase);
+  if (pending) {
+    await db.from('rounds').update({ is_complete: true }).eq('id', pending.id);
+    const idx = activeRounds.findIndex(r => r.id === pending.id);
+    activeRounds[idx] = { ...activeRounds[idx], is_complete: true };
+  }
+
+  const { error } = await db.from('sessions')
+    .update({ rt_players: updatedRtPlayers }).eq('id', activeSessionId);
+  if (!error) activeSession.rt_players = updatedRtPlayers;
+  else showToast('Failed to save phase data');
+
+  hideLoading();
+  hide('modal-rt');
+  rtTriggerPlayers = [];
+  renderGame();
+}
+
+// ── Delete ────────────────────────────────────────────────
 function confirmDeleteSession() { show('modal-confirm'); }
 function closeConfirm()         { hide('modal-confirm'); }
 
@@ -538,26 +710,23 @@ async function deleteSession() {
   if (error) { showToast('Failed to delete session'); closeConfirm(); return; }
   allSessions = allSessions.filter(s => s.id !== activeSessionId);
   closeConfirm();
-  if (allSessions.length > 0) {
-    showSessionsScreen();
-    renderSessionsList(allSessions);
-  } else {
-    showSetup();
-  }
+  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
+  else showSetup();
 }
 
-// ── Helpers ────────────────────────────────────────────────
-function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtScore(n) { return n > 0 ? '+' + n : String(n); }
-function scoreColor(n) { return n > 0 ? 'score-positive' : n < 0 ? 'score-negative' : 'score-zero'; }
+// ── Helpers ───────────────────────────────────────────────
+function esc(s)       { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtScore(n)  { return n > 0 ? '+' + n : String(n); }
+function scoreColor(n){ return n > 0 ? 'score-positive' : n < 0 ? 'score-negative' : 'score-zero'; }
 function showErr(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
 function formatDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 }
 
-document.getElementById('modal-score').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-document.getElementById('modal-confirm').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+document.getElementById('modal-score').addEventListener('click',   e => { if(e.target===e.currentTarget) closeModal(); });
+document.getElementById('modal-confirm').addEventListener('click', e => { if(e.target===e.currentTarget) closeConfirm(); });
+document.getElementById('modal-rt').addEventListener('click',      e => { if(e.target===e.currentTarget) dismissRTModal(); });
 
 init();
 </script>
