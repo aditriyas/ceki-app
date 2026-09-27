@@ -99,6 +99,10 @@
     .tag-winning { background: rgba(74,222,128,.14); color: #4ade80; border: 1px solid rgba(74,222,128,.28); }
     .tag-rt      { background: rgba(248,113,113,.14); color: #f87171; border: 1px solid rgba(248,113,113,.28); }
     .tag-calon   { background: rgba(251,191,36,.14);  color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
+
+    @media (max-width: 380px) {
+      .nav-btn-label { display: none !important; }
+    }
   </style>
   <script>
     // Immediate early theme application to avoid flash
@@ -118,16 +122,53 @@
   <p id="loading-msg" class="text-sm text-[var(--muted-foreground)]">Loading...</p>
 </div>
 
+<!-- App Top Navbar -->
+<nav id="app-navbar" class="sticky top-0 z-40 w-full bg-[var(--card)]/90 backdrop-blur-md border-b border-[var(--border)] transition-colors shadow-sm">
+  <div class="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+    <!-- Brand / Home link -->
+    <button onclick="showSessionsScreen()" class="flex items-center gap-2 hover:opacity-85 transition-opacity text-left cursor-pointer">
+      <span class="text-2xl leading-none">🀄</span>
+      <div>
+        <span class="font-bold text-base tracking-tight block leading-tight text-[var(--foreground)]">Ceki Score</span>
+        <span class="text-[10px] text-[var(--muted-foreground)] block leading-none font-medium">Tracker</span>
+      </div>
+    </button>
+
+    <!-- Navigation Action Buttons -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Home Button -->
+      <button id="nav-btn-home" onclick="showSessionsScreen()"
+        class="text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-medium shrink-0"
+        title="Home - Game Sessions">
+        <span>🏠</span>
+        <span class="nav-btn-label font-medium">Home</span>
+      </button>
+
+      <!-- Audit Log Button -->
+      <button id="nav-btn-audit" onclick="showAuditScreen(activeSessionId || null)"
+        class="text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-medium shrink-0"
+        title="Activity & Audit Log">
+        <span>🛡️</span>
+        <span class="nav-btn-label font-medium">Log</span>
+      </button>
+
+      <!-- Theme Switcher Button -->
+      <button id="nav-btn-theme" onclick="openThemeModal()"
+        class="theme-toggle-btn text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-medium shrink-0"
+        title="Switch Theme (System / Light / Dark)">
+        <span class="theme-btn-icon">💻</span>
+        <span class="theme-btn-label nav-btn-label font-medium">Auto</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
 <!-- Setup Screen -->
-<div id="screen-setup" class="hidden min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md anim-in">
+<div id="screen-setup" class="hidden min-h-[calc(100vh-3.5rem)] flex items-center justify-center p-4">
+  <div class="w-full max-w-md anim-in py-4">
     <div class="flex items-center justify-between mb-4">
       <button id="btn-setup-back" onclick="showSessionsScreen()" class="hidden inline-flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors font-medium">
-        🏠 Back to Sessions
-      </button>
-      <button onclick="openThemeModal()" class="theme-toggle-btn ml-auto text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5 shrink-0" title="Switch Theme (System / Light / Dark)">
-        <span class="theme-btn-icon">💻</span>
-        <span class="theme-btn-label font-medium">Auto</span>
+        ← Back to Sessions
       </button>
     </div>
     <div class="text-center mb-8">
@@ -163,49 +204,31 @@
 </div>
 
 <!-- Sessions List Screen -->
-<div id="screen-sessions" class="hidden min-h-screen p-4 max-w-lg mx-auto">
-  <div class="flex items-center justify-between mb-6 pt-2">
+<div id="screen-sessions" class="hidden min-h-[calc(100vh-3.5rem)] p-4 max-w-lg mx-auto">
+  <div class="flex items-center justify-between mb-5 pt-1">
     <div>
       <h2 class="text-xl font-bold">Game Sessions</h2>
       <p class="text-xs text-[var(--muted-foreground)]">Click a card to view scores</p>
     </div>
-    <div class="flex items-center gap-2">
-      <button onclick="openThemeModal()" class="theme-toggle-btn text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5 shrink-0" title="Switch Theme (System / Light / Dark)">
-        <span class="theme-btn-icon">💻</span>
-        <span class="theme-btn-label hidden sm:inline font-medium">Auto</span>
-      </button>
-      <button onclick="showAuditScreen()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5" title="Audit & Activity History">
-        <span>🛡️</span>
-        <span class="font-medium">Activity Log</span>
-      </button>
-      <button onclick="showSetup()" class="text-xs bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
-        + New Session
-      </button>
-    </div>
+    <button onclick="showSetup()" class="text-xs bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold px-3.5 py-2 rounded-xl hover:opacity-90 transition-opacity shadow-sm flex items-center gap-1.5">
+      <span>➕</span> New Session
+    </button>
   </div>
   <div id="sessions-list" class="space-y-3"></div>
 </div>
 
 <!-- Game Screen -->
-<div id="screen-game" class="hidden min-h-screen p-4 max-w-lg mx-auto">
-  <div class="flex items-center gap-2 mb-5 pt-2">
-    <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
+<div id="screen-game" class="hidden min-h-[calc(100vh-3.5rem)] p-4 max-w-lg mx-auto">
+  <div class="flex items-center gap-3 mb-5 pt-1">
+    <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl p-1 -ml-1" title="Back">←</button>
     <div class="flex-1 min-w-0">
       <h2 id="game-title" class="text-xl font-bold truncate"></h2>
       <p id="game-subtitle" class="text-xs text-[var(--muted-foreground)]"></p>
     </div>
-    <button onclick="showSessionsScreen()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1 shrink-0" title="Home - All Sessions">
-      <span>🏠</span>
-      <span class="font-medium hidden sm:inline">Home</span>
+    <button onclick="confirmDeleteSession(activeSessionId)" class="text-xs text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-1 shrink-0" title="Delete Session">
+      <span>🗑️</span>
+      <span class="hidden sm:inline font-medium">Delete</span>
     </button>
-    <button onclick="openThemeModal()" class="theme-toggle-btn text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1 shrink-0" title="Switch Theme">
-      <span class="theme-btn-icon">💻</span>
-    </button>
-    <button onclick="showAuditScreen(activeSessionId)" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5 shrink-0" title="View Audit Trail for this session">
-      <span>🛡️</span>
-      <span class="font-medium hidden sm:inline">Log</span>
-    </button>
-    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete Session">🗑️</button>
   </div>
 
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-4 shadow-sm">
@@ -251,24 +274,18 @@
 </div>
 
 <!-- Audit & Activity History Screen -->
-<div id="screen-audit" class="hidden min-h-screen p-4 max-w-lg mx-auto anim-in">
-  <div class="flex items-center gap-2 sm:gap-3 mb-4 pt-2">
-    <button onclick="closeAuditScreen()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
+<div id="screen-audit" class="hidden min-h-[calc(100vh-3.5rem)] p-4 max-w-lg mx-auto anim-in">
+  <div class="flex items-center gap-3 mb-4 pt-1">
+    <button onclick="closeAuditScreen()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl p-1 -ml-1" title="Back">←</button>
     <div class="flex-1 min-w-0">
       <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2">
         <span>🛡️</span> Activity & Audit Log
       </h2>
       <p class="text-xs text-[var(--muted-foreground)] truncate">History of score entries, edits, deletions, IP, device, and location</p>
     </div>
-    <button onclick="showSessionsScreen()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1 shrink-0" title="Home - All Sessions">
-      <span>🏠</span>
-      <span class="font-medium hidden sm:inline">Home</span>
-    </button>
-    <button onclick="openThemeModal()" class="theme-toggle-btn text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1 shrink-0" title="Switch Theme">
-      <span class="theme-btn-icon">💻</span>
-    </button>
-    <button onclick="refreshAuditLogs()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-opacity" title="Refresh Log">
-      🔄
+    <button onclick="refreshAuditLogs()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-opacity flex items-center gap-1.5 shrink-0" title="Refresh Log">
+      <span>🔄</span>
+      <span class="hidden sm:inline font-medium">Refresh</span>
     </button>
   </div>
 
@@ -482,7 +499,8 @@
     <div class="text-center mb-4">
       <div class="text-3xl mb-2">🗑️</div>
       <h3 class="font-bold text-lg">Delete Session?</h3>
-      <p class="text-sm text-[var(--muted-foreground)] mt-1">All round data will be permanently deleted.</p>
+      <p id="modal-confirm-session-name" class="text-sm font-semibold text-red-400 mt-1 truncate"></p>
+      <p class="text-xs text-[var(--muted-foreground)] mt-1">All round data and scores will be permanently deleted.</p>
     </div>
     <div class="flex gap-2">
       <button onclick="closeConfirm()" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Cancel</button>
@@ -640,6 +658,32 @@ function showToast(msg, type = 'error') {
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
+function updateNavActiveState(screen) {
+  const homeBtn  = document.getElementById('nav-btn-home');
+  const auditBtn = document.getElementById('nav-btn-audit');
+  if (!homeBtn || !auditBtn) return;
+
+  const activeClasses = ['border-[var(--primary)]', 'bg-[var(--primary)]/15', 'text-[var(--primary)]'];
+  const inactiveClasses = ['border-[var(--border)]', 'bg-[var(--background)]', 'text-[var(--foreground)]'];
+
+  if (screen === 'sessions') {
+    homeBtn.classList.remove(...inactiveClasses);
+    homeBtn.classList.add(...activeClasses);
+    auditBtn.classList.remove(...activeClasses);
+    auditBtn.classList.add(...inactiveClasses);
+  } else if (screen === 'audit') {
+    auditBtn.classList.remove(...inactiveClasses);
+    auditBtn.classList.add(...activeClasses);
+    homeBtn.classList.remove(...activeClasses);
+    homeBtn.classList.add(...inactiveClasses);
+  } else {
+    homeBtn.classList.remove(...activeClasses);
+    homeBtn.classList.add(...inactiveClasses);
+    auditBtn.classList.remove(...activeClasses);
+    auditBtn.classList.add(...inactiveClasses);
+  }
+}
+
 function setRoute(hash) {
   if (window.location.hash !== hash) {
     window.history.pushState({ hash }, '', hash);
@@ -649,6 +693,7 @@ function setRoute(hash) {
 function showSetup(push = true) {
   hide('screen-sessions'); hide('screen-game'); hide('screen-audit');
   show('screen-setup');
+  updateNavActiveState('setup');
   const backBtn = document.getElementById('btn-setup-back');
   if (backBtn) {
     if (allSessions.length > 0) backBtn.classList.remove('hidden');
@@ -661,6 +706,7 @@ function showSetup(push = true) {
 function showSessionsScreen(push = true) {
   hide('screen-setup'); hide('screen-game'); hide('screen-audit');
   show('screen-sessions');
+  updateNavActiveState('sessions');
   renderSessionsList(allSessions);
   if (push) setRoute('#sessions');
 }
@@ -801,13 +847,20 @@ async function renderSessionsList(sessions) {
     const sessionHasBadges = hasScoreDiff || (rtIdx !== null);
 
     return `
-      <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm">
-        <div class="flex items-start justify-between mb-3">
-          <div>
-            <h3 class="font-bold text-base">${esc(s.name)}</h3>
+      <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm relative group">
+        <div class="flex items-start justify-between mb-3 gap-2">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-base truncate hover:text-[var(--primary)] transition-colors">${esc(s.name)}</h3>
             <p class="text-xs text-[var(--muted-foreground)]">Phase ${curPhase} · ${doneCount} rounds · ${s.players.join(', ')}</p>
           </div>
-          <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
+            <button onclick="event.stopPropagation(); confirmDeleteSession('${s.id}')"
+                    class="text-xs text-[var(--muted-foreground)] hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                    title="Delete Session">
+              🗑️
+            </button>
+          </div>
         </div>
         <div class="grid grid-cols-4 gap-1.5 items-stretch">
           ${ranked.map((p, idx) => {
@@ -861,6 +914,7 @@ async function openSession(id, push = true) {
     activeSession = session;
     activeRounds  = rounds || [];
     hide('screen-setup'); hide('screen-sessions'); hide('screen-audit'); show('screen-game');
+    updateNavActiveState('game');
     renderGame();
     if (push) setRoute('#game-' + id);
   } catch (err) {
@@ -1396,18 +1450,59 @@ async function startNewPhase() {
 }
 
 // ── Delete ────────────────────────────────────────────────
-function confirmDeleteSession() { show('modal-confirm'); }
-function closeConfirm()         { hide('modal-confirm'); }
+let sessionToDeleteId = null;
+
+function confirmDeleteSession(sessionId = null) {
+  sessionToDeleteId = sessionId || activeSessionId;
+  const s = allSessions.find(x => x.id === sessionToDeleteId) || activeSession;
+  const name = s ? s.name : 'this session';
+  const nameEl = document.getElementById('modal-confirm-session-name');
+  if (nameEl) nameEl.textContent = `"${name}"`;
+  show('modal-confirm');
+}
+
+function closeConfirm() {
+  sessionToDeleteId = null;
+  hide('modal-confirm');
+}
 
 async function deleteSession() {
-  showLoading('Deleting...');
-  const { error } = await db.from('sessions').delete().eq('id', activeSessionId);
+  const targetId = sessionToDeleteId || activeSessionId;
+  if (!targetId) return;
+  const targetSession = allSessions.find(s => s.id === targetId) || activeSession;
+  const targetName = targetSession ? targetSession.name : 'Unknown';
+
+  showLoading('Deleting session...');
+
+  // Log to audit log (session_id null so CASCADE won't delete the audit record)
+  await logAuditAction({
+    session_id: null,
+    session_name: targetName,
+    action: 'DELETE_SESSION',
+    details: {
+      deleted_session_id: targetId,
+      session_name: targetName,
+      players: targetSession ? targetSession.players : []
+    }
+  });
+
+  const { error } = await db.from('sessions').delete().eq('id', targetId);
   hideLoading();
   if (error) { showToast('Failed to delete session'); closeConfirm(); return; }
-  allSessions = allSessions.filter(s => s.id !== activeSessionId);
+
+  allSessions = allSessions.filter(s => s.id !== targetId);
+  if (activeSessionId === targetId) {
+    activeSessionId = null;
+    activeSession = null;
+    activeRounds = [];
+  }
   closeConfirm();
-  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
-  else showSetup();
+  showToast(`Session "${targetName}" deleted`, 'success');
+  if (allSessions.length > 0) {
+    showSessionsScreen();
+  } else {
+    showSetup();
+  }
 }
 
 // ── Audit & Activity Logging ──────────────────────────────
@@ -1582,6 +1677,7 @@ async function showAuditScreen(filterSessionId = null, push = true) {
 
   updateAuditFilterTabs();
   await refreshAuditLogs();
+  updateNavActiveState('audit');
 
   if (push) {
     setRoute(filterSessionId ? '#audit-' + filterSessionId : '#audit');
@@ -1592,6 +1688,7 @@ function closeAuditScreen() {
   if (activeSessionId) {
     hide('screen-audit');
     show('screen-game');
+    updateNavActiveState('game');
     setRoute('#game-' + activeSessionId);
   } else {
     showSessionsScreen();
@@ -1701,6 +1798,9 @@ function renderAuditList(logs, isCloudActive) {
     } else if (l.action === 'DELETE_ROUND') {
       actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">🗑️ Round Deleted</span>`;
       actionDesc = `<p class="mt-1 text-xs text-red-300">Round ${l.round_number || ''}${l.phase ? ` (Phase ${l.phase})` : ''} permanently deleted</p>`;
+    } else if (l.action === 'DELETE_SESSION') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">🗑️ Session Deleted</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-red-300">Session <b>${esc(l.session_name || l.details?.session_name || 'Session')}</b> permanently deleted</p>`;
     } else if (l.action === 'NEW_PHASE') {
       actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">🔄 New Phase</span>`;
       actionDesc = `<p class="mt-1 text-xs text-purple-300">Phase ${l.phase} started · New Pak RT: <b>${esc(l.player_name || '')}</b></p>`;
