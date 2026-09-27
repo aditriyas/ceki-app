@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ceki Score Tracker</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    html, body {
+      --background:           #0f1117;
+      --foreground:           #e8eaf0;
+      --card:                 #1a1d27;
+      --border:               #2a2d3a;
+      --muted-foreground:     #6b7280;
+      --primary:              #7c6af7;
+      --primary-foreground:   #ffffff;
+      --secondary:            #23263a;
+      --secondary-foreground: #c0c4d6;
+      color-scheme: dark;
+    }
+    .card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .modal-overlay { backdrop-filter: blur(4px); }
+    .score-positive { color: #4ade80; }
+    .score-negative { color: #f87171; }
+    .score-zero { color: var(--muted-foreground); }
+    .player-badge { background: linear-gradient(135deg, #7c6af7, #a78bfa); }
+    .rank-1 { border-color: #f59e0b; }
+    .rank-2 { border-color: #94a3b8; }
+    .rank-3 { border-color: #cd7c4e; }
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input { color-scheme: dark; }
+    .anim-in { animation: fadeSlideIn 0.2s ease; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 999; padding: 10px 20px; border-radius: 12px;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      animation: fadeSlideIn 0.2s ease;
+    }
+    .toast-error   { background: #ef4444; color: white; }
+    .toast-success { background: #22c55e; color: white; }
+    .submitted-card { opacity: 0.5; pointer-events: none; }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen">
+
+<!-- ── Loading Overlay ── -->
+<div id="loading-overlay" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm">
+  <div class="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mb-3"></div>
+  <p id="loading-msg" class="text-sm text-[var(--muted-foreground)]">Loading...</p>
+</div>
+
+<!-- ── Setup Screen ── -->
+<div id="screen-setup" class="hidden min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md anim-in">
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">🀄</div>
+      <h1 class="text-3xl font-bold tracking-tight">Ceki Score Tracker</h1>
+      <p class="text-[var(--muted-foreground)] mt-1 text-sm">Track your ceki game scores easily</p>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-lg">
+      <div class="mb-5">
+        <label class="block text-sm font-semibold mb-1.5">Session Name</label>
+        <input id="input-session" type="text" placeholder="e.g. Friday Night, Christmas 2025..."
+          class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors" />
+      </div>
+      <div class="mb-6">
+        <label class="block text-sm font-semibold mb-2">Player Names <span class="text-[var(--muted-foreground)] font-normal">(4 players)</span></label>
+        <div class="space-y-2.5">
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 1" data-idx="0" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 2" data-idx="1" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 3" data-idx="2" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+          <div class="flex items-center gap-2"><span>🎴</span><input type="text" placeholder="Player 4" data-idx="3" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
+        </div>
+      </div>
+      <div id="setup-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+      <button onclick="startGame()" class="w-full bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold rounded-xl py-3 text-sm hover:opacity-90 active:scale-[0.98] transition-all">
+        Start Session 🀄
+      </button>
+    </div>
+    <div id="saved-sessions-section" class="mt-5 hidden">
+      <p class="text-xs text-[var(--muted-foreground)] font-semibold uppercase tracking-wider mb-2 text-center">Saved Sessions</p>
+      <div id="saved-sessions-list" class="space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sessions List Screen ── -->
+<div id="screen-sessions" class="hidden min-h-screen p-4 max-w-lg mx-auto">
+  <div class="flex items-center justify-between mb-6 pt-2">
+    <div>
+      <h2 class="text-xl font-bold">Game Sessions</h2>
+      <p class="text-xs text-[var(--muted-foreground)]">Click a card to view scores</p>
+    </div>
+    <button onclick="showSetup()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity">
+      + New Session
+    </button>
+  </div>
+  <div id="sessions-list" class="space-y-3"></div>
+</div>
+
+<!-- ── Game Screen ── -->
+<div id="screen-game" class="hidden min-h-screen p-4 max-w-lg mx-auto">
+  <div class="flex items-center gap-3 mb-5 pt-2">
+    <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
+    <div class="flex-1">
+      <h2 id="game-title" class="text-xl font-bold truncate"></h2>
+      <p id="game-round-count" class="text-xs text-[var(--muted-foreground)]"></p>
+    </div>
+    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 transition-colors px-2 py-1">🗑</button>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-4 shadow-sm">
+    <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3">📊 Scoreboard</p>
+    <div id="leaderboard" class="space-y-2"></div>
+  </div>
+
+  <!-- Pending round status -->
+  <div id="pending-banner" class="hidden mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
+    <p class="text-xs font-semibold text-yellow-400 mb-1">⏳ Round in progress</p>
+    <p id="pending-status" class="text-xs text-[var(--muted-foreground)]"></p>
+  </div>
+
+  <!-- Player Cards -->
+  <div class="mb-4">
+    <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3">🎴 Enter Round Score</p>
+    <p class="text-xs text-[var(--muted-foreground)] mb-3">Tap a player's card to enter their score</p>
+    <div id="player-cards" class="grid grid-cols-2 gap-3"></div>
+  </div>
+
+  <!-- Round History -->
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm mb-6">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+      <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">📋 Round History</p>
+      <button onclick="toggleHistory()" id="btn-toggle-history" class="text-xs text-[var(--primary)] hover:opacity-80">Show</button>
+    </div>
+    <div id="history-section" class="hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead><tr id="history-header" class="border-b border-[var(--border)] bg-[var(--background)]"></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+      <div id="history-empty" class="hidden text-center text-[var(--muted-foreground)] py-6 text-sm">No rounds yet</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Score Modal ── -->
+<div id="modal-score" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/40">
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="text-xs text-[var(--muted-foreground)]">Enter score for</p>
+        <h3 id="modal-player-name" class="text-lg font-bold"></h3>
+      </div>
+      <button onclick="closeModal()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl leading-none">×</button>
+    </div>
+    <div class="mb-1">
+      <label class="block text-xs font-semibold mb-1.5 text-[var(--muted-foreground)]">Score This Round</label>
+      <input id="modal-score-input" type="number" placeholder="e.g. 50 or -30"
+        class="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl px-4 py-3 text-xl font-bold text-center outline-none focus:border-[var(--primary)] transition-colors"
+        onkeydown="if(event.key==='Enter') submitScore()" />
+    </div>
+    <p class="text-xs text-[var(--muted-foreground)] mb-4 text-center">Positive = win, Negative = loss</p>
+    <div class="flex gap-2 flex-wrap justify-center mb-4">
+      <button onclick="setScore(-100)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-100</button>
+      <button onclick="setScore(-50)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-50</button>
+      <button onclick="setScore(-25)" class="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">-25</button>
+      <button onclick="setScore(25)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+25</button>
+      <button onclick="setScore(50)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+50</button>
+      <button onclick="setScore(100)" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors">+100</button>
+    </div>
+    <div id="modal-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
+    <div class="flex gap-2">
+      <button onclick="closeModal()" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Cancel</button>
+      <button onclick="submitScore()" class="flex-1 bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-90 active:scale-[0.98] transition-all">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm Delete Modal ── -->
+<div id="modal-confirm" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/40">
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
+    <div class="text-center mb-4">
+      <div class="text-3xl mb-2">🗑️</div>
+      <h3 class="font-bold text-lg">Delete Session?</h3>
+      <p class="text-sm text-[var(--muted-foreground)] mt-1">All round data will be permanently deleted.</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="closeConfirm()" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Cancel</button>
+      <button onclick="deleteSession()" class="flex-1 bg-red-500 text-white font-semibold rounded-xl py-2.5 text-sm hover:bg-red-600 active:scale-[0.98] transition-all">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Supabase Init ──────────────────────────────────────────
+const { createClient } = supabase;
+const db = createClient(
+  'https://qqwuejojwxofvqoendpe.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxd3Vlam9qd3hvZnZxb2VuZHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTMwNTcsImV4cCI6MjEwNjA2OTA1N30.7XR5chlhYWqMkHHCu8FkXY_rBLudKA260BgN26z87O4'
+);
+
+// ── State ──────────────────────────────────────────────────
+let activeSessionId = null;
+let activeSession   = null;
+let activeRounds    = [];
+let historyVisible  = false;
+let modalPlayerIdx  = null;
+let allSessions     = [];
+
+// ── Loading ────────────────────────────────────────────────
+function showLoading(msg = 'Loading...') {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading-overlay').classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+// ── Toast ──────────────────────────────────────────────────
+function showToast(msg, type = 'error') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── Screens ────────────────────────────────────────────────
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+function showSetup() {
+  hide('screen-sessions');
+  hide('screen-game');
+  show('screen-setup');
+  renderSavedSessionsMini();
+}
+
+function showSessionsScreen() {
+  hide('screen-setup');
+  hide('screen-game');
+  show('screen-sessions');
+}
+
+function goBack() {
+  hide('screen-game');
+  if (allSessions.length > 0) {
+    showSessionsScreen();
+    renderSessionsList(allSessions);
+  } else {
+    showSetup();
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────
+async function init() {
+  showLoading('Connecting to database...');
+  const { data, error } = await db
+    .from('sessions')
+    .select('*')
+    .order('created_at', { ascending: false });
+  hideLoading();
+  if (error) { showToast('Could not connect to database'); show('screen-setup'); return; }
+  allSessions = data || [];
+  if (allSessions.length > 0) {
+    showSessionsScreen();
+    renderSessionsList(allSessions);
+  } else {
+    showSetup();
+  }
+}
+
+// ── Setup ──────────────────────────────────────────────────
+function renderSavedSessionsMini() {
+  const section = document.getElementById('saved-sessions-section');
+  const list    = document.getElementById('saved-sessions-list');
+  if (allSessions.length === 0) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = allSessions.slice(0, 3).map(s => `
+    <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center justify-between">
+      <p class="font-semibold text-sm">${esc(s.name)}</p>
+      <p class="text-xs text-[var(--muted-foreground)]">${s.players.join(', ')}</p>
+    </div>`).join('');
+}
+
+async function startGame() {
+  const sessionName = document.getElementById('input-session').value.trim();
+  const inputs  = document.querySelectorAll('.player-name-input');
+  const players = Array.from(inputs).map(i => i.value.trim());
+  const errEl   = document.getElementById('setup-error');
+
+  if (!sessionName)                              { showErr(errEl, 'Session name cannot be empty'); return; }
+  if (players.some(p => !p))                    { showErr(errEl, 'All player names must be filled in'); return; }
+  if (new Set(players).size !== players.length) { showErr(errEl, 'Player names must be unique'); return; }
+  errEl.classList.add('hidden');
+
+  showLoading('Creating session...');
+  const { data, error } = await db.from('sessions').insert({ name: sessionName, players }).select().single();
+  hideLoading();
+  if (error) { showErr(errEl, 'Failed to create session. Try again.'); return; }
+
+  allSessions.unshift(data);
+  document.getElementById('input-session').value = '';
+  inputs.forEach(i => i.value = '');
+  openSession(data.id);
+}
+
+// ── Sessions List ──────────────────────────────────────────
+async function renderSessionsList(sessions) {
+  const list = document.getElementById('sessions-list');
+  if (sessions.length === 0) {
+    list.innerHTML = `<div class="text-center text-[var(--muted-foreground)] py-12">
+      <div class="text-4xl mb-3">🀄</div>
+      <p class="text-sm">No sessions yet. Create a new one!</p>
+    </div>`;
+    return;
+  }
+
+  // Fetch all rounds for these sessions to calc totals
+  const ids = sessions.map(s => s.id);
+  const { data: rounds } = await db.from('rounds').select('session_id, scores').in('session_id', ids);
+  const roundsMap = {};
+  (rounds || []).forEach(r => {
+    if (!roundsMap[r.session_id]) roundsMap[r.session_id] = [];
+    roundsMap[r.session_id].push(r);
+  });
+
+  list.innerHTML = sessions.map(s => {
+    const sRounds  = roundsMap[s.id] || [];
+    const totals   = calcTotals(s, sRounds);
+    const ranked   = s.players.map((name, i) => ({ name, total: totals[i] })).sort((a, b) => b.total - a.total);
+    return `
+      <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-base">${esc(s.name)}</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">${sRounds.filter(r=>r.is_complete).length ?? sRounds.length} rounds · ${s.players.join(', ')}</p>
+          </div>
+          <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDate(s.created_at)}</span>
+        </div>
+        <div class="grid grid-cols-4 gap-1.5">
+          ${ranked.map((p, idx) => `
+            <div class="text-center bg-[var(--background)] rounded-lg py-2 px-1 ${idx===0?'border border-yellow-500/40':''}">
+              <p class="text-xs truncate text-[var(--muted-foreground)]">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
+              <p class="font-bold text-sm mt-0.5 ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Game Screen ────────────────────────────────────────────
+async function openSession(id) {
+  activeSessionId = id;
+  historyVisible  = false;
+  showLoading('Loading session...');
+
+  const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
+    db.from('sessions').select('*').eq('id', id).single(),
+    db.from('rounds').select('*').eq('session_id', id).order('round_number', { ascending: true })
+  ]);
+  hideLoading();
+
+  if (e1 || e2) { showToast('Failed to load session'); return; }
+  activeSession = session;
+  activeRounds  = rounds || [];
+
+  hide('screen-setup');
+  hide('screen-sessions');
+  show('screen-game');
+  renderGame();
+}
+
+function calcTotals(session, rounds) {
+  return session.players.map((_, pi) =>
+    rounds.reduce((sum, r) => sum + (r.scores?.[pi] ?? 0), 0)
+  );
+}
+
+function renderGame() {
+  const session = activeSession;
+  const rounds  = activeRounds;
+
+  document.getElementById('game-title').textContent      = session.name;
+  const completeRounds = rounds.filter(r => r.is_complete);
+  document.getElementById('game-round-count').textContent = `${completeRounds.length} rounds played`;
+
+  const totals = calcTotals(session, rounds);
+  const ranked = session.players.map((name, i) => ({ name, total: totals[i], idx: i }))
+    .sort((a, b) => b.total - a.total);
+
+  // Leaderboard
+  const medals = ['🏆','🥈','🥉','4️⃣'];
+  document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => `
+    <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-' + (rank+1) : 'pl-5'}">
+      <span class="text-lg w-6 text-center">${medals[rank]}</span>
+      <div class="flex-1"><p class="font-semibold text-sm">${esc(p.name)}</p></div>
+      <p class="font-bold text-base ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+    </div>`).join('');
+
+  // Pending round
+  const pendingRound = rounds.find(r => !r.is_complete);
+  const pendingBanner = document.getElementById('pending-banner');
+  if (pendingRound) {
+    const submitted = session.players.filter((_, i) => pendingRound.scores?.[i] !== undefined && pendingRound.scores?.[i] !== null);
+    const waiting   = session.players.filter((_, i) => pendingRound.scores?.[i] === undefined || pendingRound.scores?.[i] === null);
+    document.getElementById('pending-status').textContent =
+      `Submitted: ${submitted.join(', ')} · Waiting: ${waiting.join(', ')}`;
+    pendingBanner.classList.remove('hidden');
+  } else {
+    pendingBanner.classList.add('hidden');
+  }
+
+  // Player cards
+  const colors = ['from-blue-500/20','from-purple-500/20','from-pink-500/20','from-orange-500/20'];
+  document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
+    const alreadySubmitted = pendingRound && pendingRound.scores?.[i] !== undefined && pendingRound.scores?.[i] !== null;
+    return `
+      <div onclick="${alreadySubmitted ? '' : `openModal(${i})`}"
+        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent ${alreadySubmitted ? 'submitted-card' : ''}">
+        <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">
+          ${esc(name.charAt(0).toUpperCase())}
+        </div>
+        <p class="font-semibold text-sm truncate">${esc(name)}</p>
+        <p class="font-bold text-lg mt-0.5 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
+        <p class="text-xs text-[var(--muted-foreground)] mt-1">${alreadySubmitted ? '✓ Submitted' : 'Tap to enter score'}</p>
+      </div>`;
+  }).join('');
+
+  // History
+  renderHistory(session, rounds);
+  document.getElementById('btn-toggle-history').textContent = historyVisible ? 'Hide' : 'Show';
+  document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
+}
+
+function renderHistory(session, rounds) {
+  const header  = document.getElementById('history-header');
+  const body    = document.getElementById('history-body');
+  const emptyEl = document.getElementById('history-empty');
+
+  header.innerHTML = `<th class="text-left px-4 py-2 text-[var(--muted-foreground)] font-semibold w-10">Round</th>` +
+    session.players.map(p => `<th class="px-3 py-2 text-[var(--muted-foreground)] font-semibold">${esc(p)}</th>`).join('');
+
+  const completeRounds = rounds.filter(r => r.is_complete);
+  if (completeRounds.length === 0) { body.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+
+  body.innerHTML = completeRounds.map((r, idx) => `
+    <tr class="border-t border-[var(--border)] hover:bg-[var(--background)] transition-colors">
+      <td class="px-4 py-2.5 text-[var(--muted-foreground)] font-medium">${idx + 1}</td>
+      ${session.players.map((_, pi) => {
+        const s = r.scores?.[pi] ?? 0;
+        return `<td class="px-3 py-2.5 font-semibold text-center ${scoreColor(s)}">${fmtScore(s)}</td>`;
+      }).join('')}
+    </tr>`).join('');
+}
+
+function toggleHistory() {
+  historyVisible = !historyVisible;
+  document.getElementById('btn-toggle-history').textContent = historyVisible ? 'Hide' : 'Show';
+  document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
+}
+
+// ── Score Modal ────────────────────────────────────────────
+function openModal(playerIdx) {
+  modalPlayerIdx = playerIdx;
+  document.getElementById('modal-player-name').textContent = activeSession.players[playerIdx];
+  document.getElementById('modal-score-input').value = '';
+  document.getElementById('modal-error').classList.add('hidden');
+  show('modal-score');
+  setTimeout(() => document.getElementById('modal-score-input').focus(), 100);
+}
+function closeModal() { hide('modal-score'); modalPlayerIdx = null; }
+function setScore(val) { document.getElementById('modal-score-input').value = val; }
+
+async function submitScore() {
+  const raw   = document.getElementById('modal-score-input').value.trim();
+  const errEl = document.getElementById('modal-error');
+  if (raw === '')          { showErr(errEl, 'Please enter a score'); return; }
+  const score = parseInt(raw, 10);
+  if (isNaN(score))        { showErr(errEl, 'Score must be a number'); return; }
+  errEl.classList.add('hidden');
+
+  const pi           = modalPlayerIdx;
+  const numPlayers   = activeSession.players.length;
+  const pendingRound = activeRounds.find(r => !r.is_complete);
+
+  closeModal();
+  showLoading('Saving...');
+
+  if (pendingRound) {
+    const newScores = { ...pendingRound.scores, [pi]: score };
+    const allFilled = activeSession.players.every((_, i) => newScores[i] !== undefined && newScores[i] !== null);
+    const { data, error } = await db.from('rounds')
+      .update({ scores: newScores, is_complete: allFilled })
+      .eq('id', pendingRound.id).select().single();
+    if (!error) {
+      const idx = activeRounds.findIndex(r => r.id === pendingRound.id);
+      activeRounds[idx] = data;
+    } else {
+      showToast('Failed to save score');
+    }
+  } else {
+    const roundNum  = activeRounds.filter(r => r.is_complete).length + 1;
+    const newScores = { [pi]: score };
+    const allFilled = numPlayers === 1;
+    const { data, error } = await db.from('rounds').insert({
+      session_id:   activeSessionId,
+      scores:       newScores,
+      round_number: roundNum,
+      is_complete:  allFilled
+    }).select().single();
+    if (!error) activeRounds.push(data);
+    else showToast('Failed to save score');
+  }
+
+  hideLoading();
+  renderGame();
+}
+
+// ── Delete ─────────────────────────────────────────────────
+function confirmDeleteSession() { show('modal-confirm'); }
+function closeConfirm()         { hide('modal-confirm'); }
+
+async function deleteSession() {
+  showLoading('Deleting...');
+  const { error } = await db.from('sessions').delete().eq('id', activeSessionId);
+  hideLoading();
+  if (error) { showToast('Failed to delete session'); closeConfirm(); return; }
+  allSessions = allSessions.filter(s => s.id !== activeSessionId);
+  closeConfirm();
+  if (allSessions.length > 0) {
+    showSessionsScreen();
+    renderSessionsList(allSessions);
+  } else {
+    showSetup();
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtScore(n) { return n > 0 ? '+' + n : String(n); }
+function scoreColor(n) { return n > 0 ? 'score-positive' : n < 0 ? 'score-negative' : 'score-zero'; }
+function showErr(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+}
+
+document.getElementById('modal-score').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('modal-confirm').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+init();
+</script>
+</body>
+</html>
