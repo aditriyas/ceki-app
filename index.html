@@ -444,20 +444,26 @@ function goBack() {
 
 // ── Init ──────────────────────────────────────────────────
 async function init() {
-  showLoading('Connecting...');
-  const { data, error } = await db.from('sessions').select('*').order('created_at', { ascending: false });
-  hideLoading();
-  if (error) { showToast('Could not connect to database'); show('screen-setup'); return; }
-  allSessions = data || [];
-  
-  const hash = window.location.hash;
-  if (hash.startsWith('#game-')) {
-    const id = hash.replace('#game-', '');
-    await openSession(id, false);
-  } else if (hash === '#setup' || allSessions.length === 0) {
+  try {
+    showLoading('Connecting...');
+    const { data, error } = await db.from('sessions').select('*').order('created_at', { ascending: false });
+    hideLoading();
+    if (error) { showToast('Could not connect to database'); showSetup(false); return; }
+    allSessions = data || [];
+    
+    const hash = window.location.hash;
+    if (hash.startsWith('#game-')) {
+      const id = hash.replace('#game-', '');
+      await openSession(id, false);
+    } else if (hash === '#setup' || allSessions.length === 0) {
+      showSetup(false);
+    } else {
+      showSessionsScreen(false);
+    }
+  } catch (err) {
+    console.error('init error:', err);
+    hideLoading();
     showSetup(false);
-  } else {
-    showSessionsScreen(false);
   }
 }
 
@@ -601,17 +607,30 @@ async function renderSessionsList(sessions) {
 async function openSession(id, push = true) {
   activeSessionId = id; historyVisible = false;
   showLoading('Loading session...');
-  const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
-    db.from('sessions').select('*').eq('id', id).single(),
-    db.from('rounds').select('*').eq('session_id', id).order('created_at', { ascending: true })
-  ]);
-  hideLoading();
-  if (e1 || e2) { showToast('Failed to load session'); return; }
-  activeSession = session;
-  activeRounds  = rounds || [];
-  hide('screen-setup'); hide('screen-sessions'); show('screen-game');
-  renderGame();
-  if (push) setRoute('#game-' + id);
+  try {
+    const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
+      db.from('sessions').select('*').eq('id', id).single(),
+      db.from('rounds').select('*').eq('session_id', id).order('created_at', { ascending: true })
+    ]);
+    hideLoading();
+    if (e1 || e2 || !session) {
+      showToast('Failed to load session');
+      if (allSessions.length > 0) showSessionsScreen(false);
+      else showSetup(false);
+      return;
+    }
+    activeSession = session;
+    activeRounds  = rounds || [];
+    hide('screen-setup'); hide('screen-sessions'); show('screen-game');
+    renderGame();
+    if (push) setRoute('#game-' + id);
+  } catch (err) {
+    console.error('openSession error:', err);
+    hideLoading();
+    showToast('Failed to load session');
+    if (allSessions.length > 0) showSessionsScreen(false);
+    else showSetup(false);
+  }
 }
 
 function renderGame() {
@@ -853,7 +872,15 @@ async function saveEditedScore() {
   showLoading('Updating score...');
 
   try {
-    const targetRound = activeRounds.find(r => r.id === editRoundId);
+    let targetRound = activeRounds.find(r => String(r.id) === String(editRoundId));
+    if (!targetRound && editRoundId) {
+      // Fallback: fetch directly from Supabase if not present in memory
+      const { data: dbRound, error: fetchErr } = await db.from('rounds').select('*').eq('id', editRoundId).single();
+      if (dbRound && !fetchErr) {
+        targetRound = dbRound;
+        activeRounds.push(dbRound);
+      }
+    }
     if (!targetRound) throw new Error('Round not found');
 
     const updatedScores = { ...(targetRound.scores || {}), [editPlayerIdx]: score };
@@ -864,8 +891,12 @@ async function saveEditedScore() {
 
     if (error) throw error;
 
-    const idx = activeRounds.findIndex(r => r.id === editRoundId);
-    if (idx !== -1) activeRounds[idx] = data;
+    const idx = activeRounds.findIndex(r => String(r.id) === String(editRoundId));
+    if (idx !== -1) {
+      activeRounds[idx] = data;
+    } else {
+      activeRounds.push(data);
+    }
 
     showToast('Score updated!', 'success');
     renderGame();
@@ -898,7 +929,7 @@ async function executeDeleteRound() {
     const { error } = await db.from('rounds').delete().eq('id', idToDelete);
     if (error) throw error;
 
-    activeRounds = activeRounds.filter(r => r.id !== idToDelete);
+    activeRounds = activeRounds.filter(r => String(r.id) !== String(idToDelete));
     showToast('Round deleted', 'success');
     renderGame();
   } catch (err) {
@@ -906,6 +937,7 @@ async function executeDeleteRound() {
     showToast('Failed to delete round: ' + err.message);
   } finally {
     hideLoading();
+    deletingRoundId = null;
   }
 }
 
