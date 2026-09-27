@@ -81,6 +81,9 @@
 <!-- Setup Screen -->
 <div id="screen-setup" class="hidden min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md anim-in">
+    <button id="btn-setup-back" onclick="goBack()" class="hidden inline-flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] mb-4 transition-colors font-medium">
+      ← Back to Sessions
+    </button>
     <div class="text-center mb-8">
       <div class="text-5xl mb-3">🀄</div>
       <h1 class="text-3xl font-bold tracking-tight">Ceki Score Tracker</h1>
@@ -333,23 +336,42 @@ function showToast(msg, type = 'error') {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ── Screen Helpers ────────────────────────────────────────
+// ── Screen Helpers & History Routing ──────────────────────
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
-function showSetup() {
+function setRoute(hash) {
+  if (window.location.hash !== hash) {
+    window.history.pushState({ hash }, '', hash);
+  }
+}
+
+function showSetup(push = true) {
   hide('screen-sessions'); hide('screen-game');
   show('screen-setup');
+  const backBtn = document.getElementById('btn-setup-back');
+  if (backBtn) {
+    if (allSessions.length > 0) backBtn.classList.remove('hidden');
+    else backBtn.classList.add('hidden');
+  }
   renderSavedSessionsMini();
+  if (push) setRoute('#setup');
 }
-function showSessionsScreen() {
+
+function showSessionsScreen(push = true) {
   hide('screen-setup'); hide('screen-game');
   show('screen-sessions');
+  renderSessionsList(allSessions);
+  if (push) setRoute('#sessions');
 }
+
 function goBack() {
-  hide('screen-game');
-  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
-  else showSetup();
+  if (window.history.length > 1 && window.location.hash) {
+    window.history.back();
+  } else {
+    if (allSessions.length > 0) showSessionsScreen();
+    else showSetup();
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────
@@ -359,9 +381,36 @@ async function init() {
   hideLoading();
   if (error) { showToast('Could not connect to database'); show('screen-setup'); return; }
   allSessions = data || [];
-  if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
-  else showSetup();
+  
+  const hash = window.location.hash;
+  if (hash.startsWith('#game-')) {
+    const id = hash.replace('#game-', '');
+    await openSession(id, false);
+  } else if (hash === '#setup' || allSessions.length === 0) {
+    showSetup(false);
+  } else {
+    showSessionsScreen(false);
+  }
 }
+
+// Handle Browser Back & Forward buttons
+window.addEventListener('popstate', () => {
+  const hash = window.location.hash;
+  if (hash.startsWith('#game-')) {
+    const id = hash.replace('#game-', '');
+    if (activeSessionId !== id || document.getElementById('screen-game').classList.contains('hidden')) {
+      openSession(id, false);
+    }
+  } else if (hash === '#setup') {
+    showSetup(false);
+  } else {
+    if (allSessions.length > 0) {
+      showSessionsScreen(false);
+    } else {
+      showSetup(false);
+    }
+  }
+});
 
 // ── Setup ─────────────────────────────────────────────────
 function renderSavedSessionsMini() {
@@ -471,7 +520,7 @@ async function renderSessionsList(sessions) {
 }
 
 // ── Game Screen ───────────────────────────────────────────
-async function openSession(id) {
+async function openSession(id, push = true) {
   activeSessionId = id; historyVisible = false;
   showLoading('Loading session...');
   const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
@@ -484,6 +533,7 @@ async function openSession(id) {
   activeRounds  = rounds || [];
   hide('screen-setup'); hide('screen-sessions'); show('screen-game');
   renderGame();
+  if (push) setRoute('#game-' + id);
 }
 
 function renderGame() {
