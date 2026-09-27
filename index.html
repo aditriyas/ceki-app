@@ -416,7 +416,7 @@ async function renderSessionsList(sessions) {
             <h3 class="font-bold text-base">${esc(s.name)}</h3>
             <p class="text-xs text-[var(--muted-foreground)]">Phase ${curPhase} · ${doneCount} rounds · ${s.players.join(', ')}</p>
           </div>
-          <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDate(s.created_at)}</span>
+          <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
         </div>
         <div class="grid grid-cols-4 gap-1.5">
           ${ranked.map((p, idx) => {
@@ -461,10 +461,9 @@ function renderGame() {
   const rtIdx    = getCurrentRTIndex(session);        // sticky RT from last phase end
   const calonIdx = getCalonRTIndex(session, rounds);  // current last-place
 
-  // Header
   document.getElementById('game-title').textContent = session.name;
   const doneCount = rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).length;
-  document.getElementById('game-subtitle').textContent = `Phase ${phase} · ${doneCount} rounds played`;
+  document.getElementById('game-subtitle').textContent = `Phase ${phase} · ${doneCount} rounds · Created: ${formatDateTime(session.created_at)}`;
 
   // Phase info badges
   const phaseBadges = document.getElementById('phase-badges');
@@ -722,6 +721,22 @@ function showErr(el, msg) { el.textContent = msg; el.classList.remove('hidden');
 function formatDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+}
+function formatDateShort(iso) {
+  // For session cards: "Sep 27 · 15:30"
+  if (!iso) return '';
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return `${date} · ${time}`;
+}
+function formatDateTime(iso) {
+  // For detail view: "Sep 27, 2026 · 3:30 PM"
+  if (!iso) return '';
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return `${date} · ${time}`;
 }
 
 document.getElementById('modal-score').addEventListener('click',   e => { if(e.target===e.currentTarget) closeModal(); });
