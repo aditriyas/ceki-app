@@ -186,6 +186,65 @@
     .tag-rt      { background: rgba(255,82,82,.16); color: #ff5252; border: 1px solid rgba(255,82,82,.35); }
     .tag-calon   { background: rgba(255,179,0,.16);  color: #ffb300; border: 1px solid rgba(255,179,0,.35); }
 
+    /* Non-VIP (Classic Light & Dark modes from main branch) */
+    html:not(.casino) body {
+      background-color: var(--background) !important;
+      background-image: none !important;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    }
+
+    html:not(.casino) .font-casino {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+      letter-spacing: normal !important;
+    }
+
+    html:not(.casino) .font-digital {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+      letter-spacing: normal !important;
+    }
+
+    html:not(.casino) .gold-text {
+      background: none !important;
+      -webkit-background-clip: initial !important;
+      -webkit-text-fill-color: initial !important;
+      color: var(--foreground) !important;
+      filter: none !important;
+      text-shadow: none !important;
+    }
+
+    html:not(.casino) .btn-gold {
+      background: var(--primary) !important;
+      color: var(--primary-foreground) !important;
+      font-weight: 600 !important;
+      border: none !important;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+      text-shadow: none !important;
+      transform: none !important;
+    }
+    html:not(.casino) .btn-gold:hover {
+      background: var(--primary) !important;
+      opacity: 0.9 !important;
+      transform: none !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    html:not(.casino) .chip-btn {
+      box-shadow: none !important;
+      border-radius: 0.75rem !important;
+      font-weight: 600 !important;
+    }
+
+    html:not(.casino) .player-badge {
+      background: linear-gradient(135deg, #7c6af7, #a78bfa) !important;
+    }
+
+    /* Brand visibility toggling */
+    html.casino .brand-classic { display: none !important; }
+    html.casino .brand-vip { display: flex !important; }
+
+    html:not(.casino) .brand-vip { display: none !important; }
+    html:not(.casino) .brand-classic { display: flex !important; }
+
     @media (max-width: 380px) {
       .nav-btn-label { display: none !important; }
     }
@@ -194,18 +253,13 @@
     // Immediate early theme application to avoid flash
     (function() {
       const saved = localStorage.getItem('ceki_theme') || 'casino';
-      if (saved === 'light') {
+      const theme = (saved === 'system') ? 'casino' : saved;
+      if (theme === 'light') {
         document.documentElement.classList.add('light');
-      } else if (saved === 'dark') {
-        document.documentElement.classList.add('dark_classic');
-      } else if (saved === 'system') {
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('casino');
-        } else {
-          document.documentElement.classList.add('light');
-        }
+      } else if (theme === 'dark' || theme === 'dark_classic') {
+        document.documentElement.classList.add('dark', 'dark_classic');
       } else {
-        document.documentElement.classList.add('casino');
+        document.documentElement.classList.add('dark', 'casino');
       }
     })();
   </script>
@@ -238,17 +292,29 @@
   <div class="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
     <!-- Brand / Home link -->
     <button onclick="showSessionsScreen()" class="flex items-center gap-2 hover:opacity-85 transition-opacity text-left cursor-pointer group">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-800 p-0.5 shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
-        <div class="w-full h-full bg-[#12141d] rounded-[10px] flex items-center justify-center text-lg">
-          🀄
+      <!-- Classic Brand (shown in Light / Dark mode, exactly as in main) -->
+      <div class="brand-classic items-center gap-2">
+        <span class="text-2xl leading-none">🀄</span>
+        <div>
+          <span class="font-bold text-base tracking-tight block leading-tight text-[var(--foreground)]" data-i18n="app_brand_name">Ceki Score</span>
+          <span class="text-[10px] text-[var(--muted-foreground)] block leading-none font-medium" data-i18n="app_brand_sub">Tracker</span>
         </div>
       </div>
-      <div>
-        <div class="flex items-center gap-1.5">
-          <span class="font-casino font-black text-base tracking-wider gold-text leading-tight">ESBE188</span>
-          <span class="text-[9px] font-black bg-gradient-to-r from-red-600 to-amber-600 text-white px-1.5 py-0.2 rounded shadow">VIP</span>
+
+      <!-- VIP Casino Brand (shown in VIP Casino Mode) -->
+      <div class="brand-vip items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-800 p-0.5 shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
+          <div class="w-full h-full bg-[#12141d] rounded-[10px] flex items-center justify-center text-lg">
+            🀄
+          </div>
         </div>
-        <span id="app-sub-title" data-i18n="app_subtitle" class="text-[9px] text-amber-400/80 font-semibold tracking-widest block uppercase -mt-0.5 leading-none">Score Tracker</span>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-casino font-black text-base tracking-wider gold-text leading-tight">ESBE188</span>
+            <span class="text-[9px] font-black bg-gradient-to-r from-red-600 to-amber-600 text-white px-1.5 py-0.2 rounded shadow">VIP</span>
+          </div>
+          <span data-i18n="app_subtitle" class="text-[9px] text-amber-400/80 font-semibold tracking-widest block uppercase -mt-0.5 leading-none">Score Tracker</span>
+        </div>
       </div>
     </button>
 
@@ -257,8 +323,8 @@
       <!-- Home Button -->
       <button id="nav-btn-home" onclick="showSessionsScreen()"
         class="text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
-        title="Home - Tables">
-        <span>🏛️</span>
+        title="Home">
+        <span id="nav-btn-home-icon">🏛️</span>
         <span class="nav-btn-label" data-i18n="nav_lobby">Lobby</span>
       </button>
 
@@ -273,7 +339,7 @@
       <!-- Theme Switcher Button -->
       <button id="nav-btn-theme" onclick="openThemeModal()"
         class="theme-toggle-btn text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
-        title="Switch Theme (Casino / System / Light / Dark)">
+        title="Switch Theme (VIP / Light / Dark)">
         <span class="theme-btn-icon">🎰</span>
         <span class="theme-btn-label nav-btn-label">VIP</span>
       </button>
@@ -298,7 +364,7 @@
       </button>
     </div>
     <div class="text-center mb-8">
-      <div class="text-5xl mb-3">🎰</div>
+      <div id="setup-icon" class="text-5xl mb-3">🎰</div>
       <h1 data-i18n="setup_title" class="text-3xl font-black font-casino gold-text tracking-tight">OPEN NEW CEKI TABLE</h1>
       <p data-i18n="setup_subtitle" class="text-amber-400/80 mt-1 text-xs font-semibold">Track 4 players' score & auto-assign Pak RT</p>
     </div>
@@ -334,7 +400,7 @@
   <div class="flex items-center justify-between mb-5 pt-1">
     <div>
       <h2 class="text-lg font-black font-casino gold-text tracking-wide flex items-center gap-2">
-        <span>🎲</span> <span data-i18n="sessions_title">ACTIVE CEKI TABLES</span>
+        <span id="sessions-title-icon">🎲</span> <span data-i18n="sessions_title">ACTIVE CEKI TABLES</span>
       </h2>
       <p data-i18n="sessions_subtitle" class="text-xs text-[var(--muted-foreground)]">Select a table to view live scoreboard</p>
     </div>
@@ -470,19 +536,6 @@
           </div>
         </div>
         <span id="theme-check-casino" class="text-base text-[var(--primary)] font-bold">✓</span>
-      </button>
-
-      <!-- System Default -->
-      <button onclick="setTheme('system')" id="theme-opt-system"
-        class="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 transition-all text-left">
-        <div class="flex items-center gap-3">
-          <span class="text-xl">💻</span>
-          <div>
-            <p data-i18n="modal_theme_system_title" class="text-sm font-semibold">System Default</p>
-            <p data-i18n="modal_theme_system_sub" class="text-[11px] text-[var(--muted-foreground)]">Follow device theme (PC/Phone)</p>
-          </div>
-        </div>
-        <span id="theme-check-system" class="text-base text-[var(--primary)] font-bold hidden">✓</span>
       </button>
 
       <!-- Light Mode -->
@@ -690,42 +743,68 @@ let currentLang = localStorage.getItem('ceki_lang') || 'en';
 const translations = {
   en: {
     app_title: "ESBE188 VIP - Ceki Score Tracker",
+    app_title_classic: "Ceki Score Tracker",
+    app_brand_name: "Ceki Score",
+    app_brand_sub: "Tracker",
     app_subtitle: "Score Tracker",
+    app_subtitle_classic: "Tracker",
     nav_lobby: "Lobby",
+    nav_lobby_classic: "Home",
     nav_audit: "Audit",
+    nav_audit_classic: "Log",
     nav_theme: "Theme",
+    nav_theme_classic: "Theme",
     nav_lang: "EN",
 
     ticker_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">PAK RT STATUS:</span> Lowest rank becomes Pak RT & shuffles cards &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
 
     // Setup Screen
     setup_title: "OPEN NEW CEKI TABLE",
+    setup_title_classic: "Ceki Score Tracker",
     setup_subtitle: "Track 4 players\' score & auto-assign Pak RT",
+    setup_subtitle_classic: "Track your ceki game scores easily",
     setup_back: "← Back to Tables",
+    setup_back_classic: "← Back to Sessions",
     setup_session_label: "TABLE / SESSION NAME",
+    setup_session_label_classic: "Session Name",
     setup_session_ph: "e.g. Friday Night High Stakes...",
+    setup_session_ph_classic: "e.g. Friday Night, Christmas 2025...",
     setup_players_label: "4 PLAYERS\' NAMES (PLAYER 1 TO 4)",
+    setup_players_label_classic: "Player Names (4 players)",
     setup_player_ph: "Player",
     setup_submit_btn: "OPEN VIP TABLE 🎰",
+    setup_submit_btn_classic: "Start Session 🀄",
     setup_saved_header: "SAVED TABLES",
+    setup_saved_header_classic: "Saved Sessions",
 
     // Sessions Screen
     sessions_title: "ACTIVE CEKI TABLES",
+    sessions_title_classic: "Game Sessions",
     sessions_subtitle: "Select a table to open live scoreboard",
+    sessions_subtitle_classic: "Click a card to view scores",
     sessions_btn_new: "NEW TABLE",
+    sessions_btn_new_classic: "New Session",
     sessions_empty_title: "No tables yet. Open a new one!",
+    sessions_empty_title_classic: "No sessions yet. Create a new one!",
     sessions_phase_round: "Phase {phase} · {rounds} rounds · {players}",
 
     // Game Screen
     game_btn_delete: "Delete Table",
+    game_btn_delete_classic: "Delete",
     game_scoreboard_title: "LIVE SCOREBOARD VIP",
+    game_scoreboard_title_classic: "Scoreboard",
     game_pending_title: "⏳ Round in progress",
     game_pending_status: "Submitted: {submitted} · Waiting: {waiting}",
     game_enter_score_title: "ENTER ROUND SCORE",
+    game_enter_score_title_classic: "Enter Round Score",
     game_enter_score_sub: "Tap a player\'s card to enter score chips:",
+    game_enter_score_sub_classic: "Tap a player\'s card to enter their score",
     game_submitted_badge: "✓ SUBMITTED",
+    game_submitted_badge_classic: "✓ Entered",
     game_tap_badge: "🎲 TAP TO ENTER",
+    game_tap_badge_classic: "Tap to enter",
     game_history_title: "ROUND HISTORY",
+    game_history_title_classic: "Round History",
     game_btn_show: "Show",
     game_btn_hide: "Hide",
     game_phase_active: "Active",
@@ -736,23 +815,36 @@ const translations = {
 
     // Badges
     badge_gacor: "GACOR ⚡",
+    badge_gacor_classic: "Winning",
     badge_sultan_gacor: "SULTAN GACOR ⚡",
+    badge_sultan_gacor_classic: "Winning",
     badge_pak_rt: "PAK RT",
+    badge_pak_rt_classic: "RT",
     badge_pak_rt_shuffle: "PAK RT (SHUFFLE)",
+    badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
+    badge_calon_rt_classic: "Calon RT",
 
     // Modals - Score
     modal_score_title: "ENTER PLAYER SCORE",
+    modal_score_title_classic: "Enter Score",
     modal_score_points: "POINTS THIS ROUND",
+    modal_score_points_classic: "Score This Round",
     modal_score_chips_hint: "Tap chips below for quick score:",
+    modal_score_chips_hint_classic: "Positive = win, Negative = loss",
     modal_btn_cancel: "Cancel",
     modal_btn_submit_score: "SPIN / SAVE 🎰",
+    modal_btn_submit_score_classic: "Save",
 
     // Modals - Edit Score
     modal_edit_title: "EDIT SCORE",
+    modal_edit_title_classic: "Edit Score",
     modal_edit_points: "REVISED POINTS",
+    modal_edit_points_classic: "Score This Round",
     modal_edit_chips_hint: "Tap chips below to adjust points:",
+    modal_edit_chips_hint_classic: "Positive = win, Negative = loss",
     modal_btn_save_edit: "SAVE REVISION 🎰",
+    modal_btn_save_edit_classic: "Save",
 
     // Modals - Delete Round
     modal_del_round_title: "Delete Round?",
@@ -761,25 +853,28 @@ const translations = {
 
     // Modals - RT 1000 Sensational
     modal_rt_sensational: "SENSATIONAL!",
+    modal_rt_sensational_classic: "1,000 Points Reached!",
     modal_rt_hit: "SCORE HIT 1,000 POINTS!",
+    modal_rt_hit_classic: "Score reached 1,000 points!",
     modal_rt_victim_q: "Who becomes Pak RT for next phase?",
     modal_rt_calon_label: "Calon RT",
     modal_rt_new_label: "New Pak RT",
     modal_rt_quote: '🃏 "Must shuffle cards for the next phase!"',
+    modal_rt_quote_classic: '🃏 "New Pak RT must shuffle cards for the next phase"',
     modal_rt_prompt: "Start a new phase? All player scores will reset to 0.",
     modal_btn_dismiss: "Dismiss",
     modal_btn_new_phase: "NEW PHASE 🔄",
+    modal_btn_new_phase_classic: "Start New Phase",
 
     // Modals - Delete Session
     modal_del_sess_title: "Delete Table?",
+    modal_del_sess_title_classic: "Delete Session?",
     modal_del_sess_desc: "All round data and scores will be permanently deleted.",
 
     // Modals - Theme
     modal_theme_title: "App Theme",
     modal_theme_casino_title: "Casino VIP",
     modal_theme_casino_sub: "Dark luxury & gold Olympus style",
-    modal_theme_system_title: "System Default",
-    modal_theme_system_sub: "Follow device theme (PC/Phone)",
     modal_theme_light_title: "Light Mode",
     modal_theme_light_sub: "Clean & bright appearance",
     modal_theme_dark_title: "Dark Classic",
@@ -805,6 +900,7 @@ const translations = {
 
     // Errors & Toasts
     err_session_empty: "Table name cannot be empty",
+    err_session_empty_classic: "Session name cannot be empty",
     err_players_filled: "All player names must be filled in",
     err_players_unique: "Player names must be unique",
     err_score_number: "Score must be a number",
@@ -812,47 +908,74 @@ const translations = {
     toast_score_updated: "Score updated!",
     toast_round_deleted: "Round deleted",
     toast_session_deleted: 'Table "{name}" deleted',
+    toast_session_deleted_classic: 'Session "{name}" deleted',
     toast_lang_changed: "Language: English",
     toast_theme_changed: "Theme: {name}"
   },
   id: {
     app_title: "ESBE188 VIP - Tracker Skor Ceki",
+    app_title_classic: "Tracker Skor Ceki",
+    app_brand_name: "Skor Ceki",
+    app_brand_sub: "Tracker",
     app_subtitle: "Scoreboard Ceki",
+    app_subtitle_classic: "Scoreboard",
     nav_lobby: "Lobby",
+    nav_lobby_classic: "Beranda",
     nav_audit: "Mutasi",
-    nav_theme: "Tema",
+    nav_audit_classic: "Log",
+    nav_theme: "VIP",
+    nav_theme_classic: "Tema",
     nav_lang: "ID",
 
     ticker_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">STATUS RT:</span> Peringkat terbawah jadi Pak RT & ngocok kartu &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
 
     // Setup Screen
     setup_title: "BUKA MEJA CEKI BARU",
+    setup_title_classic: "Tracker Skor Ceki",
     setup_subtitle: "Track poin 4 pemain & tetapkan Pak RT secara otomatis",
+    setup_subtitle_classic: "Catat skor ceki dengan mudah",
     setup_back: "← Kembali ke Daftar Meja",
+    setup_back_classic: "← Kembali ke Daftar Sesi",
     setup_session_label: "NAMA ROOM / MEJA",
+    setup_session_label_classic: "Nama Sesi",
     setup_session_ph: "Contoh: Meja Sultan Jumat Malam...",
+    setup_session_ph_classic: "Contoh: Main Jumat Malam...",
     setup_players_label: "NAMA 4 PEMAIN (PEMAIN 1 S/D 4)",
+    setup_players_label_classic: "Nama Pemain (4 pemain)",
     setup_player_ph: "Pemain",
     setup_submit_btn: "BUKA MEJA VIP 🎰",
+    setup_submit_btn_classic: "Mulai Sesi 🀄",
     setup_saved_header: "SESI TERSIMPAN",
+    setup_saved_header_classic: "Sesi Tersimpan",
 
     // Sessions Screen
     sessions_title: "MEJA CEKI AKTIF",
+    sessions_title_classic: "Sesi Permainan",
     sessions_subtitle: "Pilih room meja untuk melihat live scoreboard",
+    sessions_subtitle_classic: "Klik kartu untuk melihat skor",
     sessions_btn_new: "BUKA MEJA",
+    sessions_btn_new_classic: "Sesi Baru",
     sessions_empty_title: "Belum ada sesi meja. Buka meja baru!",
+    sessions_empty_title_classic: "Belum ada sesi tersimpan. Buat sesi baru!",
     sessions_phase_round: "Fase {phase} · {rounds} putaran · {players}",
 
     // Game Screen
     game_btn_delete: "Hapus Meja",
+    game_btn_delete_classic: "Hapus",
     game_scoreboard_title: "LIVE SCOREBOARD VIP",
+    game_scoreboard_title_classic: "Scoreboard",
     game_pending_title: "⏳ Putaran Sedang Berjalan",
     game_pending_status: "Terinput: {submitted} · Menunggu: {waiting}",
     game_enter_score_title: "INPUT SKOR PUTARAN",
+    game_enter_score_title_classic: "Input Skor Putaran",
     game_enter_score_sub: "Tekan kartu pemain untuk membuka chip poin:",
+    game_enter_score_sub_classic: "Tekan kartu pemain untuk input skor",
     game_submitted_badge: "✓ TERPASANG",
+    game_submitted_badge_classic: "✓ Terinput",
     game_tap_badge: "🎲 TEKAN INPUT",
+    game_tap_badge_classic: "Tekan input",
     game_history_title: "RIWAYAT PUTARAN",
+    game_history_title_classic: "Riwayat Putaran",
     game_btn_show: "Buka",
     game_btn_hide: "Tutup",
     game_phase_active: "Aktif",
@@ -863,23 +986,36 @@ const translations = {
 
     // Badges
     badge_gacor: "GACOR ⚡",
+    badge_gacor_classic: "Menang",
     badge_sultan_gacor: "SULTAN GACOR ⚡",
+    badge_sultan_gacor_classic: "Menang",
     badge_pak_rt: "PAK RT",
+    badge_pak_rt_classic: "RT",
     badge_pak_rt_shuffle: "PAK RT (NGOCOK)",
+    badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
+    badge_calon_rt_classic: "Calon RT",
 
     // Modals - Score
     modal_score_title: "INPUT SKOR PEMAIN",
+    modal_score_title_classic: "Input Skor",
     modal_score_points: "POIN PUTARAN INI",
+    modal_score_points_classic: "Skor Putaran Ini",
     modal_score_chips_hint: "Tekan chip di bawah untuk mengisi poin cepat:",
+    modal_score_chips_hint_classic: "Positif = menang, Negatif = kalah",
     modal_btn_cancel: "Batal",
     modal_btn_submit_score: "SPIN / SIMPAN 🎰",
+    modal_btn_submit_score_classic: "Simpan",
 
     // Modals - Edit Score
     modal_edit_title: "KOREKSI SKOR",
+    modal_edit_title_classic: "Edit Skor",
     modal_edit_points: "POIN REVISI",
+    modal_edit_points_classic: "Skor Putaran Ini",
     modal_edit_chips_hint: "Tekan chip di bawah untuk mengubah poin:",
+    modal_edit_chips_hint_classic: "Positif = menang, Negatif = kalah",
     modal_btn_save_edit: "SIMPAN REVISI 🎰",
+    modal_btn_save_edit_classic: "Simpan",
 
     // Modals - Delete Round
     modal_del_round_title: "Hapus Putaran?",
@@ -888,29 +1024,32 @@ const translations = {
 
     // Modals - RT 1000 Sensational
     modal_rt_sensational: "SENSATIONAL!",
+    modal_rt_sensational_classic: "Mencapai 1.000 Poin!",
     modal_rt_hit: "SKOR TEMBUS 1,000 POIN!",
+    modal_rt_hit_classic: "Skor telah mencapai 1.000 poin!",
     modal_rt_victim_q: "Siapakah yang jadi Korban / Pak RT?",
     modal_rt_calon_label: "Calon RT",
     modal_rt_new_label: "Pak RT Baru",
     modal_rt_quote: '🃏 "Wajib ngocok kartu untuk fase berikutnya!"',
+    modal_rt_quote_classic: '🃏 "Pak RT baru wajib mengocok kartu untuk fase berikutnya"',
     modal_rt_prompt: "Mulai fase baru? Semua skor direset ke 0.",
     modal_btn_dismiss: "Tutup",
     modal_btn_new_phase: "FASE BARU 🔄",
+    modal_btn_new_phase_classic: "Mulai Fase Baru",
 
     // Modals - Delete Session
     modal_del_sess_title: "Hapus Meja?",
+    modal_del_sess_title_classic: "Hapus Sesi?",
     modal_del_sess_desc: "Semua data putaran dan skor akan dihapus permanen.",
 
     // Modals - Theme
     modal_theme_title: "Tema Aplikasi",
     modal_theme_casino_title: "Casino VIP",
     modal_theme_casino_sub: "Gaya mewah gelap & emas Olympus",
-    modal_theme_system_title: "System Default",
-    modal_theme_system_sub: "Ikuti tema HP / PC / Mac",
     modal_theme_light_title: "Light Mode",
-    modal_theme_light_sub: "Tampilan terang dan bersih",
+    modal_theme_light_sub: "Tampilan klasik terang & bersih",
     modal_theme_dark_title: "Dark Classic",
-    modal_theme_dark_sub: "Tema gelap minimalis klasik",
+    modal_theme_dark_sub: "Tema gelap klasik minimalis",
     modal_btn_done: "Selesai",
 
     // Audit Screen
@@ -932,6 +1071,7 @@ const translations = {
 
     // Errors & Toasts
     err_session_empty: "Nama sesi tidak boleh kosong",
+    err_session_empty_classic: "Nama sesi tidak boleh kosong",
     err_players_filled: "Semua nama pemain harus diisi",
     err_players_unique: "Nama pemain tidak boleh sama",
     err_score_number: "Skor harus berupa angka",
@@ -939,13 +1079,32 @@ const translations = {
     toast_score_updated: "Skor diperbarui!",
     toast_round_deleted: "Putaran dihapus",
     toast_session_deleted: 'Meja "{name}" dihapus',
+    toast_session_deleted_classic: 'Sesi "{name}" dihapus',
     toast_lang_changed: "Bahasa: Indonesia",
     toast_theme_changed: "Tema: {name}"
   }
 };
 
 function t(key, params = {}) {
-  let str = (translations[currentLang] && translations[currentLang][key]) || (translations['en'][key]) || key;
+  const isCasino = (currentTheme === 'casino');
+  let effectiveKey = key;
+  if (!isCasino) {
+    if (translations[currentLang]?.[key + '_classic'] !== undefined) {
+      effectiveKey = key + '_classic';
+    } else if (translations['en']?.[key + '_classic'] !== undefined) {
+      effectiveKey = key + '_classic';
+    }
+  }
+  let str = (translations[currentLang] && translations[currentLang][effectiveKey] !== undefined)
+    ? translations[currentLang][effectiveKey]
+    : (translations['en'] && translations['en'][effectiveKey] !== undefined)
+    ? translations['en'][effectiveKey]
+    : (translations[currentLang] && translations[currentLang][key] !== undefined)
+    ? translations[currentLang][key]
+    : (translations['en'] && translations['en'][key] !== undefined)
+    ? translations['en'][key]
+    : key;
+
   for (const [k, v] of Object.entries(params)) {
     str = str.replace(new RegExp(`{${k}}`, 'g'), v);
   }
@@ -956,13 +1115,17 @@ function updateLanguageUI() {
   document.documentElement.lang = currentLang;
   document.title = t('app_title');
 
-  // Navbar labels
+  const isCasino = (currentTheme === 'casino');
+
+  // Navbar labels & icons
+  const navHomeIcon = document.getElementById('nav-btn-home-icon');
+  if (navHomeIcon) navHomeIcon.textContent = isCasino ? '🏛️' : '🏠';
   const navHome = document.querySelector('#nav-btn-home .nav-btn-label');
   if (navHome) navHome.textContent = t('nav_lobby');
+
   const navAudit = document.querySelector('#nav-btn-audit .nav-btn-label');
   if (navAudit) navAudit.textContent = t('nav_audit');
-  const navTheme = document.querySelector('#nav-btn-theme .nav-btn-label');
-  if (navTheme) navTheme.textContent = currentTheme === 'casino' ? 'VIP' : t('nav_theme');
+
   const langLabel = document.getElementById('lang-btn-label');
   if (langLabel) langLabel.textContent = currentLang.toUpperCase();
 
@@ -970,21 +1133,31 @@ function updateLanguageUI() {
   const tickerEl = document.getElementById('vip-marquee-content');
   if (tickerEl) tickerEl.innerHTML = t('ticker_text');
 
+  // Setup screen dynamic icon
+  const setupIcon = document.getElementById('setup-icon');
+  if (setupIcon) setupIcon.textContent = isCasino ? '🎰' : '🀄';
+
+  // Sessions screen title icon
+  const sessIcon = document.getElementById('sessions-title-icon');
+  if (sessIcon) sessIcon.classList.toggle('hidden', !isCasino);
+
   // Static Elements with data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    if (key && translations[currentLang]?.[key]) {
-      el.textContent = translations[currentLang][key];
+    if (key) {
+      el.textContent = t(key);
     }
   });
 
   // Static Inputs with data-i18n-ph
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
     const key = el.getAttribute('data-i18n-ph');
-    if (key && translations[currentLang]?.[key]) {
-      el.placeholder = translations[currentLang][key];
+    if (key) {
+      el.placeholder = t(key);
     }
   });
+
+  updateThemeUI();
 }
 
 function setLanguage(lang) {
@@ -1011,14 +1184,16 @@ function toggleLanguage() {
 }
 
 // ── Theme Management ──────────────────────────────────────
-let currentTheme = localStorage.getItem('ceki_theme') || 'casino';
+let currentTheme = localStorage.getItem('ceki_theme');
+if (!currentTheme || currentTheme === 'system') currentTheme = 'casino';
+localStorage.setItem('ceki_theme', currentTheme);
 
 function applyTheme(theme) {
-  currentTheme = theme;
-  localStorage.setItem('ceki_theme', theme);
-  const isLight = (theme === 'light') || (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const isDarkClassic = (theme === 'dark');
-  const isCasino = (theme === 'casino') || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  currentTheme = (theme === 'system') ? 'casino' : theme;
+  localStorage.setItem('ceki_theme', currentTheme);
+  const isLight = (currentTheme === 'light');
+  const isDarkClassic = (currentTheme === 'dark');
+  const isCasino = (currentTheme === 'casino');
 
   document.documentElement.classList.toggle('light', isLight);
   document.documentElement.classList.toggle('dark_classic', isDarkClassic);
@@ -1030,17 +1205,32 @@ function applyTheme(theme) {
     marquee.classList.toggle('hidden', !isCasino);
   }
 
-  updateThemeUI();
+  updateLanguageUI();
+
+  // Re-render active view so badges, cards & titles refresh immediately
+  if (!document.getElementById('screen-sessions').classList.contains('hidden')) {
+    renderSessionsList(allSessions);
+  } else if (!document.getElementById('screen-game').classList.contains('hidden') && activeSession) {
+    renderGame();
+  } else if (!document.getElementById('screen-setup').classList.contains('hidden')) {
+    renderSavedSessionsMini();
+  } else if (!document.getElementById('screen-audit').classList.contains('hidden')) {
+    refreshAuditLogs();
+  }
 }
 
 function updateThemeUI() {
-  const icon = currentTheme === 'casino' ? '🎰' : currentTheme === 'system' ? '💻' : currentTheme === 'light' ? '☀️' : '🌙';
-  const label = currentTheme === 'casino' ? 'VIP' : currentTheme === 'system' ? 'Auto' : currentTheme === 'light' ? 'Light' : 'Dark';
+  const isCasino = currentTheme === 'casino';
+  const isLight  = currentTheme === 'light';
+  const icon = isCasino ? '🎰' : (isLight ? '☀️' : '🌙');
+  const label = isCasino 
+    ? 'VIP' 
+    : (isLight ? (currentLang === 'id' ? 'Terang' : 'Light') : (currentLang === 'id' ? 'Gelap' : 'Dark'));
 
   document.querySelectorAll('.theme-btn-icon').forEach(el => el.textContent = icon);
   document.querySelectorAll('.theme-btn-label').forEach(el => el.textContent = label);
 
-  ['casino', 'system', 'light', 'dark'].forEach(t => {
+  ['casino', 'light', 'dark'].forEach(t => {
     const checkEl = document.getElementById('theme-check-' + t);
     const optEl = document.getElementById('theme-opt-' + t);
     if (checkEl) checkEl.classList.toggle('hidden', currentTheme !== t);
@@ -1065,16 +1255,14 @@ function closeThemeModal() {
 
 function setTheme(theme) {
   applyTheme(theme);
-  const name = theme === 'casino' ? 'Casino VIP' : theme === 'system' ? (currentLang === 'id' ? 'System Default (Otomatis)' : 'System Default (Auto)') : theme === 'light' ? 'Light Mode' : 'Dark Classic';
+  const name = theme === 'casino'
+    ? 'Casino VIP'
+    : theme === 'light'
+    ? (currentLang === 'id' ? 'Mode Terang' : 'Light Mode')
+    : (currentLang === 'id' ? 'Dark Classic' : 'Dark Classic');
   showToast(t('toast_theme_changed', { name }), 'success');
   setTimeout(closeThemeModal, 200);
 }
-
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (currentTheme === 'system') {
-    applyTheme('system');
-  }
-});
 
 // ── Phase Helpers ─────────────────────────────────────────
 function getMaxRoundPhase(rounds) {
@@ -1373,10 +1561,13 @@ async function renderSessionsList(sessions) {
             const isFirst = hasScoreDiff && p.total === maxTotal;
             const isRT    = p.idx === rtIdx;
             const isCalon = hasScoreDiff && p.total === minTotal;
+            const isCasino = (currentTheme === 'casino');
+            const medal = isCasino ? (['🏆','🥈','🥉',''][idx] || '') : (['🥇','🥈','🥉',''][idx] || '');
+            const cardBorder = (isFirst && isCasino) ? 'border border-amber-500/40 shadow-sm' : 'border border-transparent';
             return `
-              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl p-2 min-h-[74px] ${isFirst ? 'border border-amber-500/40 shadow-sm' : 'border border-transparent'}">
+              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl p-2 min-h-[74px] ${cardBorder}">
                 <div>
-                  <p class="text-[11px] truncate text-[var(--foreground)] font-medium">${['🏆','🥈','🥉',''][idx] || ''} ${esc(p.name)}</p>
+                  <p class="text-[11px] truncate text-[var(--foreground)] font-medium">${medal} ${esc(p.name)}</p>
                   <!-- Tag below name -->
                   <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
                     ${isFirst ? `<span class="odoo-tag tag-winning">${t('badge_gacor')}</span>` : ''}
@@ -1430,6 +1621,7 @@ function renderGame() {
   const totals   = calcTotals(session, rounds);
   const rtIdx    = getCurrentRTIndex(session);        // sticky RT from last phase end
   const calonIdx = getCalonRTIndex(session, rounds);  // current last-place
+  const isCasino = (currentTheme === 'casino');
 
   document.getElementById('game-title').textContent = session.name;
   const doneCount = rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).length;
@@ -1456,12 +1648,12 @@ function renderGame() {
     const isFirst = hasScoreDiff && p.total === maxTotal;
     const isRT    = p.idx === rtIdx;
     const isCalon = hasScoreDiff && p.total === minTotal;
-    const medalIcon = hasScoreDiff ? (p.total === maxTotal ? '👑' : medals[rank]) : '•';
+    const medalIcon = hasScoreDiff ? (isCasino ? (p.total === maxTotal ? '👑' : medals[rank]) : (['🥇','🥈','🥉',''][rank] || '')) : (isCasino ? '•' : ' ');
     return `
       <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-'+(rank+1) : 'pl-5'}">
         <span class="text-lg w-6 text-center">${medalIcon}</span>
         <div class="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
-          <p class="font-semibold text-sm ${isFirst ? 'text-amber-300 font-bold' : ''}">${esc(p.name)}</p>
+          <p class="font-semibold text-sm ${isFirst && isCasino ? 'text-amber-300 font-bold' : ''}">${esc(p.name)}</p>
           ${isFirst ? `<span class="odoo-tag tag-winning">${t('badge_sultan_gacor')}</span>`  : ''}
           ${isRT    ? `<span class="odoo-tag tag-rt">${t('badge_pak_rt_shuffle')}</span>`       : ''}
           ${isCalon ? `<span class="odoo-tag tag-calon">${t('badge_calon_rt')}</span>`         : ''}
@@ -1483,15 +1675,17 @@ function renderGame() {
   }
 
   // Player cards
-  const colors = ['from-amber-500/20','from-cyan-500/20','from-purple-500/20','from-emerald-500/20'];
+  const colors = isCasino ? ['from-amber-500/20','from-cyan-500/20','from-purple-500/20','from-emerald-500/20'] : ['','','',''];
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
     const submitted = pendingRound && pendingRound.scores?.[i] != null;
     const isRT      = i === rtIdx;
     const isCalon   = hasScoreDiff && totals[i] === minTotal;
     const isFirst   = hasScoreDiff && totals[i] === maxTotal;
+    const bgGrad    = isCasino ? `bg-gradient-to-b ${colors[i]} to-transparent` : '';
+    const borderGlow = (isFirst && isCasino) ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : '';
     return `
       <div onclick="${submitted ? '' : `openModal(${i})`}"
-        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent flex flex-col justify-between ${submitted ? 'submitted-card' : ''} ${isFirst ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : ''}">
+        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm ${bgGrad} flex flex-col justify-between ${submitted ? 'submitted-card' : ''} ${borderGlow}">
         <div>
           <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2 shadow-md">
             ${esc(name.charAt(0).toUpperCase())}
