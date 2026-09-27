@@ -813,6 +813,8 @@ function toggleHistory() {
   historyVisible = !historyVisible;
   document.getElementById('btn-toggle-history').textContent = historyVisible ? 'Hide' : 'Show';
   document.getElementById('history-section').classList.toggle('hidden', !historyVisible);
+}
+
 // ── Edit Score / Delete Round ─────────────────────────────
 function openEditScoreModal(roundId, roundIdx, playerIdx, currentScore) {
   editRoundId   = roundId;
