@@ -485,6 +485,7 @@ async function renderSessionsList(sessions) {
     const maxTotal   = Math.max(...totals);
     const minTotal   = Math.min(...totals);
     const hasScoreDiff = doneCount > 0 && maxTotal !== minTotal;
+    const sessionHasBadges = hasScoreDiff || (rtIdx !== null);
 
     return `
       <div onclick="openSession('${s.id}')" class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm">
@@ -497,13 +498,22 @@ async function renderSessionsList(sessions) {
         </div>
         <div class="grid grid-cols-4 gap-1.5 items-stretch">
           ${ranked.map((p, idx) => {
-            const isFirst  = hasScoreDiff && p.total === maxTotal && idx === 0;
-            const isRT     = p.idx === rtIdx;
-            const isCalon  = hasScoreDiff && p.idx === calonIdx;
+            if (!sessionHasBadges) {
+              // Brand new session with 0 rounds: snug & compact, zero dead space!
+              return `
+                <div class="flex flex-col items-center justify-center text-center bg-[var(--background)] rounded-xl py-3 px-1 border border-transparent">
+                  <p class="text-xs truncate text-[var(--foreground)] font-medium mb-1">${esc(p.name)}</p>
+                  <p class="font-bold text-sm text-[var(--muted-foreground)]">0</p>
+                </div>`;
+            }
+
+            const isFirst = hasScoreDiff && p.total === maxTotal;
+            const isRT    = p.idx === rtIdx;
+            const isCalon = hasScoreDiff && p.total === minTotal;
             return `
-              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl p-2 min-h-[78px] ${isFirst ? 'border border-yellow-500/40' : 'border border-transparent'}">
+              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl p-2 min-h-[74px] ${isFirst ? 'border border-yellow-500/40' : 'border border-transparent'}">
                 <div>
-                  <p class="text-[11px] truncate text-[var(--foreground)] font-medium">${hasScoreDiff ? ['🏆','🥈','🥉',''][idx] : ''} ${esc(p.name)}</p>
+                  <p class="text-[11px] truncate text-[var(--foreground)] font-medium">${['🏆','🥈','🥉',''][idx] || ''} ${esc(p.name)}</p>
                   <!-- Odoo 19 style tag below name -->
                   <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
                     ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>' : ''}
@@ -605,12 +615,12 @@ function renderGame() {
             ${esc(name.charAt(0).toUpperCase())}
           </div>
           <p class="font-semibold text-sm truncate">${esc(name)}</p>
-          <!-- Odoo 19 style tag right below name -->
+          ${(isFirst || isRT || isCalon) ? `
           <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
             ${isFirst ? '<span class="odoo-tag tag-winning">Winning</span>' : ''}
             ${isRT    ? '<span class="odoo-tag tag-rt">RT</span>' : ''}
             ${isCalon ? '<span class="odoo-tag tag-calon">Calon RT</span>' : ''}
-          </div>
+          </div>` : ''}
         </div>
         <div>
           <p class="font-bold text-xl mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
