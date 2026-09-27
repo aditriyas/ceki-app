@@ -418,18 +418,24 @@ async function renderSessionsList(sessions) {
           </div>
           <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
         </div>
-        <div class="grid grid-cols-4 gap-1.5">
+        <div class="grid grid-cols-4 gap-1.5 items-stretch">
           ${ranked.map((p, idx) => {
             const isFirst  = idx === 0;
             const isRT     = p.idx === rtIdx;
-            const isCalon  = p.idx === calonIdx; // can stack with RT badge
+            const isCalon  = p.idx === calonIdx;
+            const hasBadge = isFirst || isRT || isCalon;
             return `
-              <div class="text-center bg-[var(--background)] rounded-lg py-2 px-1 ${isFirst ? 'border border-yellow-500/40' : ''}">
-                <p class="text-xs truncate text-[var(--muted-foreground)] mb-1">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
-                ${isFirst ? '<span class="badge badge-winning">Winning</span>' : ''}
-                ${isRT    ? '<span class="badge badge-rt">RT</span>' : ''}
-                ${isCalon ? '<span class="badge badge-calon">Calon RT</span>' : ''}
-                <p class="font-bold text-sm mt-1 ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+              <div class="flex flex-col justify-between text-center bg-[var(--background)] rounded-xl py-2 px-1 ${isFirst ? 'border border-yellow-500/40' : 'border border-transparent'}">
+                <div>
+                  <p class="text-[11px] truncate text-[var(--muted-foreground)] font-medium mb-1">${['🏆','🥈','🥉',''][idx]} ${esc(p.name)}</p>
+                  <p class="font-bold text-sm ${scoreColor(p.total)}">${fmtScore(p.total)}</p>
+                </div>
+                <div class="min-h-[24px] flex items-center justify-center gap-1 mt-1.5 flex-wrap">
+                  ${isFirst ? '<span class="badge badge-winning text-[9px] px-1.5 py-0.5">Winning</span>' : ''}
+                  ${isRT    ? '<span class="badge badge-rt text-[9px] px-1.5 py-0.5">RT</span>' : ''}
+                  ${isCalon ? '<span class="badge badge-calon text-[9px] px-1.5 py-0.5">Calon RT</span>' : ''}
+                  ${!hasBadge ? '<span class="invisible text-[9px] select-none py-0.5">-</span>' : ''}
+                </div>
               </div>`;
           }).join('')}
         </div>
@@ -508,20 +514,28 @@ function renderGame() {
   document.getElementById('player-cards').innerHTML = session.players.map((name, i) => {
     const submitted = pendingRound && pendingRound.scores?.[i] != null;
     const isRT      = i === rtIdx;
-    const isCalon   = i === calonIdx; // can stack with RT badge
+    const isCalon   = i === calonIdx;
+    const isFirst   = ranked[0].idx === i;
+    const hasBadge  = isFirst || isRT || isCalon;
     return `
       <div onclick="${submitted ? '' : `openModal(${i})`}"
-        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent ${submitted ? 'submitted-card' : ''}">
-        <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">
-          ${esc(name.charAt(0).toUpperCase())}
+        class="card-hover cursor-pointer bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center shadow-sm bg-gradient-to-b ${colors[i]} to-transparent flex flex-col justify-between ${submitted ? 'submitted-card' : ''}">
+        <div>
+          <div class="w-10 h-10 rounded-full player-badge flex items-center justify-center text-white font-bold text-lg mx-auto mb-2 shadow-sm">
+            ${esc(name.charAt(0).toUpperCase())}
+          </div>
+          <p class="font-semibold text-sm truncate">${esc(name)}</p>
+          <p class="font-bold text-xl mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
         </div>
-        <p class="font-semibold text-sm truncate">${esc(name)}</p>
-        <div class="flex gap-1 justify-center mt-1 min-h-[20px]">
-          ${isRT    ? '<span class="badge badge-rt">RT</span>'          : ''}
-          ${isCalon ? '<span class="badge badge-calon">Calon RT</span>' : ''}
+        <div>
+          <div class="min-h-[24px] flex items-center justify-center gap-1 mt-2 flex-wrap">
+            ${isFirst ? '<span class="badge badge-winning text-[9px] px-1.5 py-0.5">Winning</span>' : ''}
+            ${isRT    ? '<span class="badge badge-rt text-[9px] px-1.5 py-0.5">RT</span>' : ''}
+            ${isCalon ? '<span class="badge badge-calon text-[9px] px-1.5 py-0.5">Calon RT</span>' : ''}
+            ${!hasBadge ? '<span class="invisible text-[9px] select-none py-0.5">-</span>' : ''}
+          </div>
+          <p class="text-[11px] text-[var(--muted-foreground)] mt-2 border-t border-[var(--border)]/40 pt-2">${submitted ? '✓ Submitted' : 'Tap to enter score'}</p>
         </div>
-        <p class="font-bold text-lg mt-1 ${scoreColor(totals[i])}">${fmtScore(totals[i])}</p>
-        <p class="text-xs text-[var(--muted-foreground)] mt-1">${submitted ? '✓ Submitted' : 'Tap to enter score'}</p>
       </div>`;
   }).join('');
 
