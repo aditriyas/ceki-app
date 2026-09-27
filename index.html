@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CEKI88 VIP - Ceki Score Tracker</title>
+  <title>SB188 VIP - Ceki Score Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
-    /* Casino VIP (Judol Default Theme) */
+    /* Casino VIP Theme */
     html.casino, html:not(.light):not(.dark_classic) {
       --background:           #08090e;
       --foreground:           #f8fafc;
@@ -219,7 +219,7 @@
 </div>
 
 <!-- Running Jackpot Marquee Ticker -->
-<div id="judol-marquee" class="bg-gradient-to-r from-red-950/80 via-black to-amber-950/80 border-b border-amber-500/30 overflow-hidden py-1.5 px-3 flex items-center gap-2 text-xs">
+<div id="vip-marquee" class="bg-gradient-to-r from-red-950/80 via-black to-amber-950/80 border-b border-amber-500/30 overflow-hidden py-1.5 px-3 flex items-center gap-2 text-xs">
   <div class="flex items-center gap-1 shrink-0 bg-red-600/90 text-white font-black text-[10px] px-2 py-0.5 rounded tracking-wider uppercase animate-pulse">
     <span>🔥 LIVE RTP 99.8%</span>
   </div>
@@ -245,7 +245,7 @@
       </div>
       <div>
         <div class="flex items-center gap-1.5">
-          <span class="font-casino font-black text-base tracking-wider gold-text leading-tight">CEKI88</span>
+          <span class="font-casino font-black text-base tracking-wider gold-text leading-tight">SB188</span>
           <span class="text-[9px] font-black bg-gradient-to-r from-red-600 to-amber-600 text-white px-1.5 py-0.2 rounded shadow">VIP</span>
         </div>
         <span class="text-[9px] text-amber-400/80 font-semibold tracking-widest block uppercase -mt-0.5 leading-none">Score Tracker</span>
@@ -451,13 +451,13 @@
     </div>
 
     <div class="space-y-2 mb-4">
-      <!-- Casino VIP (Judol Default) -->
+      <!-- Casino VIP Theme -->
       <button onclick="setTheme('casino')" id="theme-opt-casino"
         class="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 transition-all text-left">
         <div class="flex items-center gap-3">
           <span class="text-xl">🎰</span>
           <div>
-            <p class="text-sm font-bold gold-text font-casino">Casino VIP (Judol)</p>
+            <p class="text-sm font-bold gold-text font-casino">Casino VIP</p>
             <p class="text-[11px] text-[var(--muted-foreground)]">Dark luxury & gold Olympus style</p>
           </div>
         </div>
@@ -691,7 +691,7 @@ function applyTheme(theme) {
   document.documentElement.classList.toggle('casino', isCasino);
   document.documentElement.classList.toggle('dark', !isLight);
 
-  const marquee = document.getElementById('judol-marquee');
+  const marquee = document.getElementById('vip-marquee');
   if (marquee) {
     marquee.classList.toggle('hidden', !isCasino);
   }
@@ -731,7 +731,7 @@ function closeThemeModal() {
 
 function setTheme(theme) {
   applyTheme(theme);
-  const name = theme === 'casino' ? 'Casino VIP (Judol)' : theme === 'system' ? 'System Default (Auto)' : theme === 'light' ? 'Light Mode' : 'Dark Classic';
+  const name = theme === 'casino' ? 'Casino VIP' : theme === 'system' ? 'System Default (Auto)' : theme === 'light' ? 'Light Mode' : 'Dark Classic';
   showToast(`Theme: ${name}`, 'success');
   setTimeout(closeThemeModal, 200);
 }
