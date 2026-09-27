@@ -323,23 +323,23 @@
 
     <!-- Navigation Action Buttons -->
     <div class="flex items-center gap-1 sm:gap-1.5">
-      <!-- Home Button -->
+      <!-- Home Button (Desktop) -->
       <button id="nav-btn-home" onclick="showSessionsScreen()"
-        class="text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
+        class="hidden sm:flex text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all items-center gap-1.5 font-bold shrink-0 shadow-sm"
         title="Home">
         <span id="nav-btn-home-icon">🏛️</span>
         <span class="nav-btn-label" data-i18n="nav_lobby">Lobby</span>
       </button>
 
-      <!-- Audit Log Button -->
+      <!-- Audit Log Button (Desktop) -->
       <button id="nav-btn-audit" onclick="showAuditScreen(activeSessionId || null)"
-        class="text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
+        class="hidden sm:flex text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all items-center gap-1.5 font-bold shrink-0 shadow-sm"
         title="Activity & Audit Log">
         <span>🛡️</span>
         <span class="nav-btn-label" data-i18n="nav_audit">Audit</span>
       </button>
 
-      <!-- Theme Switcher Button -->
+      <!-- Theme Switcher Button (Always visible on mobile & desktop) -->
       <button id="nav-btn-theme" onclick="openThemeModal()"
         class="theme-toggle-btn text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
         title="Switch Theme (VIP / Light / Dark)">
@@ -347,16 +347,62 @@
         <span class="theme-btn-label nav-btn-label">VIP</span>
       </button>
 
-      <!-- Language Toggle Button (EN / ID) -->
+      <!-- Language Toggle Button (Desktop) -->
       <button id="nav-btn-lang" onclick="toggleLanguage()"
-        class="text-xs px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-[var(--background)] hover:border-[var(--primary)] text-amber-300 transition-all flex items-center gap-1 font-bold shrink-0 shadow-sm"
+        class="hidden sm:flex text-xs px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-[var(--background)] hover:border-[var(--primary)] text-amber-300 transition-all items-center gap-1 font-bold shrink-0 shadow-sm"
         title="Switch Language (English / Indonesia)">
         <span>🌐</span>
         <span id="lang-btn-label" class="nav-btn-label font-mono">EN</span>
       </button>
+
+      <!-- Mobile Menu / List Button (Mobile only) -->
+      <button id="nav-btn-menu" onclick="toggleMobileMenu()"
+        class="sm:hidden text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center justify-center font-bold shrink-0 shadow-sm"
+        title="Menu" aria-label="Open menu">
+        <span id="nav-menu-icon" class="text-sm leading-none">☰</span>
+      </button>
     </div>
   </div>
 </nav>
+
+<!-- Mobile Navigation Dropdown Popup -->
+<div id="mobile-nav-menu" class="hidden sm:hidden fixed inset-x-0 top-14 z-50 p-3 bg-black/60 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-2.5 shadow-2xl space-y-1 anim-in max-w-sm mx-auto">
+    <!-- Lobby link -->
+    <button id="mobile-nav-home" onclick="showSessionsScreen(); closeMobileMenu();"
+      class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold text-[var(--foreground)] hover:bg-[var(--secondary)]/40 flex items-center justify-between transition-colors">
+      <span class="flex items-center gap-2.5">
+        <span id="mobile-nav-home-icon">🏛️</span>
+        <span data-i18n="nav_lobby">Lobby</span>
+      </span>
+      <span class="text-[10px] text-[var(--muted-foreground)]">➔</span>
+    </button>
+
+    <!-- Audit link -->
+    <button id="mobile-nav-audit" onclick="showAuditScreen(activeSessionId || null); closeMobileMenu();"
+      class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold text-[var(--foreground)] hover:bg-[var(--secondary)]/40 flex items-center justify-between transition-colors">
+      <span class="flex items-center gap-2.5">
+        <span>🛡️</span>
+        <span data-i18n="nav_audit">Audit</span>
+      </span>
+      <span class="text-[10px] text-[var(--muted-foreground)]">➔</span>
+    </button>
+
+    <div class="border-t border-[var(--border)]/60 my-1"></div>
+
+    <!-- Language Switcher in Mobile Menu -->
+    <div class="px-3.5 py-2 flex items-center justify-between">
+      <span class="text-xs font-bold text-[var(--foreground)] flex items-center gap-2.5">
+        <span>🌐</span>
+        <span data-i18n="nav_lang_title">Language</span>
+      </span>
+      <button onclick="toggleLanguage();" class="text-xs px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold hover:bg-amber-500/20 transition-all flex items-center gap-1.5 font-mono">
+        <span id="mobile-lang-btn-label">EN</span>
+        <span class="text-[10px] opacity-75">⇄</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Setup Screen -->
 <div id="screen-setup" class="hidden min-h-[calc(100vh-3.5rem)] flex items-center justify-center p-4">
@@ -779,6 +825,7 @@ const translations = {
     nav_theme: "Theme",
     nav_theme_classic: "Theme",
     nav_lang: "EN",
+    nav_lang_title: "Language",
 
     ticker_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> No Pak RT yet (All Safe) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
     ticker_shame_title: "WALL OF SHAME (PAK RT):",
@@ -968,6 +1015,7 @@ const translations = {
     nav_theme: "VIP",
     nav_theme_classic: "Tema",
     nav_lang: "ID",
+    nav_lang_title: "Bahasa",
 
     ticker_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> Belum ada korban (Semua Aman) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
     ticker_shame_title: "WALL OF SHAME (PAK RT):",
@@ -1180,6 +1228,9 @@ function updateLanguageUI() {
   // Navbar labels & icons
   const navHomeIcon = document.getElementById('nav-btn-home-icon');
   if (navHomeIcon) navHomeIcon.textContent = isCasino ? '🏛️' : '🏠';
+  const mobileNavHomeIcon = document.getElementById('mobile-nav-home-icon');
+  if (mobileNavHomeIcon) mobileNavHomeIcon.textContent = isCasino ? '🏛️' : '🏠';
+
   const navHome = document.querySelector('#nav-btn-home .nav-btn-label');
   if (navHome) navHome.textContent = t('nav_lobby');
 
@@ -1188,6 +1239,8 @@ function updateLanguageUI() {
 
   const langLabel = document.getElementById('lang-btn-label');
   if (langLabel) langLabel.textContent = currentLang.toUpperCase();
+  const mobileLangLabel = document.getElementById('mobile-lang-btn-label');
+  if (mobileLangLabel) mobileLangLabel.textContent = currentLang.toUpperCase();
 
   // Ticker marquee with Wall of Shame
   updateTickerWithWallOfShame();
@@ -1540,29 +1593,71 @@ function showToast(msg, type = 'error') {
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
+// ── Mobile Navigation Menu ────────────────────────────────
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-nav-menu');
+  if (!menu) return;
+  if (menu.classList.contains('hidden')) {
+    openMobileMenu();
+  } else {
+    closeMobileMenu();
+  }
+}
+
+function openMobileMenu() {
+  const menu = document.getElementById('mobile-nav-menu');
+  const icon = document.getElementById('nav-menu-icon');
+  if (menu) menu.classList.remove('hidden');
+  if (icon) icon.textContent = '✕';
+}
+
+function closeMobileMenu() {
+  const menu = document.getElementById('mobile-nav-menu');
+  const icon = document.getElementById('nav-menu-icon');
+  if (menu) menu.classList.add('hidden');
+  if (icon) icon.textContent = '☰';
+}
+
 function updateNavActiveState(screen) {
   const homeBtn  = document.getElementById('nav-btn-home');
   const auditBtn = document.getElementById('nav-btn-audit');
-  if (!homeBtn || !auditBtn) return;
+  if (homeBtn && auditBtn) {
+    const activeClasses = ['border-[var(--primary)]', 'bg-[var(--primary)]/15', 'text-[var(--primary)]'];
+    const inactiveClasses = ['border-[var(--border)]', 'bg-[var(--background)]', 'text-[var(--foreground)]'];
 
-  const activeClasses = ['border-[var(--primary)]', 'bg-[var(--primary)]/15', 'text-[var(--primary)]'];
-  const inactiveClasses = ['border-[var(--border)]', 'bg-[var(--background)]', 'text-[var(--foreground)]'];
+    if (screen === 'sessions') {
+      homeBtn.classList.remove(...inactiveClasses);
+      homeBtn.classList.add(...activeClasses);
+      auditBtn.classList.remove(...activeClasses);
+      auditBtn.classList.add(...inactiveClasses);
+    } else if (screen === 'audit') {
+      auditBtn.classList.remove(...inactiveClasses);
+      auditBtn.classList.add(...activeClasses);
+      homeBtn.classList.remove(...activeClasses);
+      homeBtn.classList.add(...inactiveClasses);
+    } else {
+      homeBtn.classList.remove(...activeClasses);
+      homeBtn.classList.add(...inactiveClasses);
+      auditBtn.classList.remove(...activeClasses);
+      auditBtn.classList.add(...inactiveClasses);
+    }
+  }
 
-  if (screen === 'sessions') {
-    homeBtn.classList.remove(...inactiveClasses);
-    homeBtn.classList.add(...activeClasses);
-    auditBtn.classList.remove(...activeClasses);
-    auditBtn.classList.add(...inactiveClasses);
-  } else if (screen === 'audit') {
-    auditBtn.classList.remove(...inactiveClasses);
-    auditBtn.classList.add(...activeClasses);
-    homeBtn.classList.remove(...activeClasses);
-    homeBtn.classList.add(...inactiveClasses);
-  } else {
-    homeBtn.classList.remove(...activeClasses);
-    homeBtn.classList.add(...inactiveClasses);
-    auditBtn.classList.remove(...activeClasses);
-    auditBtn.classList.add(...inactiveClasses);
+  // Mobile nav buttons active state
+  const mHomeBtn  = document.getElementById('mobile-nav-home');
+  const mAuditBtn = document.getElementById('mobile-nav-audit');
+  if (mHomeBtn && mAuditBtn) {
+    const mActiveClasses = ['bg-[var(--primary)]/15', 'text-[var(--primary)]'];
+    if (screen === 'sessions') {
+      mHomeBtn.classList.add(...mActiveClasses);
+      mAuditBtn.classList.remove(...mActiveClasses);
+    } else if (screen === 'audit') {
+      mAuditBtn.classList.add(...mActiveClasses);
+      mHomeBtn.classList.remove(...mActiveClasses);
+    } else {
+      mHomeBtn.classList.remove(...mActiveClasses);
+      mAuditBtn.classList.remove(...mActiveClasses);
+    }
   }
 }
 
@@ -2908,6 +3003,17 @@ document.getElementById('modal-delete-round').addEventListener('click', e => { i
 document.getElementById('modal-confirm').addEventListener('click',      e => { if(e.target===e.currentTarget) closeConfirm(); });
 document.getElementById('modal-rt').addEventListener('click',           e => { if(e.target===e.currentTarget) dismissRTModal(); });
 document.getElementById('modal-theme').addEventListener('click',        e => { if(e.target===e.currentTarget) closeThemeModal(); });
+document.getElementById('mobile-nav-menu')?.addEventListener('click',   e => { if(e.target===e.currentTarget) closeMobileMenu(); });
+
+document.addEventListener('click', e => {
+  const menu = document.getElementById('mobile-nav-menu');
+  const btn = document.getElementById('nav-btn-menu');
+  if (menu && !menu.classList.contains('hidden')) {
+    if (!menu.contains(e.target) && !btn?.contains(e.target)) {
+      closeMobileMenu();
+    }
+  }
+});
 
 init();
 </script>
