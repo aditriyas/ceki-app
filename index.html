@@ -123,22 +123,32 @@
       <h2 class="text-xl font-bold">Game Sessions</h2>
       <p class="text-xs text-[var(--muted-foreground)]">Click a card to view scores</p>
     </div>
-    <button onclick="showSetup()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity">
-      + New Session
-    </button>
+    <div class="flex items-center gap-2">
+      <button onclick="showAuditScreen()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5" title="Audit & Activity History">
+        <span>🛡️</span>
+        <span class="font-medium">Activity Log</span>
+      </button>
+      <button onclick="showSetup()" class="text-xs bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
+        + New Session
+      </button>
+    </div>
   </div>
   <div id="sessions-list" class="space-y-3"></div>
 </div>
 
 <!-- Game Screen -->
 <div id="screen-game" class="hidden min-h-screen p-4 max-w-lg mx-auto">
-  <div class="flex items-center gap-3 mb-5 pt-2">
+  <div class="flex items-center gap-2.5 mb-5 pt-2">
     <button onclick="goBack()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
-    <div class="flex-1">
+    <div class="flex-1 min-w-0">
       <h2 id="game-title" class="text-xl font-bold truncate"></h2>
       <p id="game-subtitle" class="text-xs text-[var(--muted-foreground)]"></p>
     </div>
-    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 px-2 py-1">🗑</button>
+    <button onclick="showAuditScreen(activeSessionId)" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-all flex items-center gap-1.5 shrink-0" title="View Audit Trail for this session">
+      <span>🛡️</span>
+      <span class="font-medium">Log</span>
+    </button>
+    <button onclick="confirmDeleteSession()" class="text-xs text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete Session">🗑️</button>
   </div>
 
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-4 shadow-sm">
@@ -180,6 +190,52 @@
       </div>
       <div id="history-empty" class="hidden text-center text-[var(--muted-foreground)] py-6 text-sm">No rounds yet</div>
     </div>
+  </div>
+</div>
+
+<!-- Audit & Activity History Screen -->
+<div id="screen-audit" class="hidden min-h-screen p-4 max-w-lg mx-auto anim-in">
+  <div class="flex items-center gap-3 mb-4 pt-2">
+    <button onclick="closeAuditScreen()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-xl">←</button>
+    <div class="flex-1 min-w-0">
+      <h2 class="text-xl font-bold flex items-center gap-2">
+        <span>🛡️</span> Activity & Audit Log
+      </h2>
+      <p class="text-xs text-[var(--muted-foreground)]">Riwayat perubahan skor, IP, device, dan lokasi</p>
+    </div>
+    <button onclick="refreshAuditLogs()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-opacity" title="Refresh Log">
+      🔄
+    </button>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+    <button id="audit-filter-all" onclick="filterAuditSession(null)" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white shadow-sm shrink-0 transition-all">
+      Semua Sesi
+    </button>
+    <button id="audit-filter-current" onclick="filterAuditSession(activeSessionId)" class="hidden text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] shrink-0 transition-all">
+      Sesi Aktif
+    </button>
+  </div>
+
+  <!-- Cloud Sync / SQL Banner (if Supabase table not created yet) -->
+  <div id="audit-sql-banner" class="hidden mb-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-xs">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <p class="font-semibold text-amber-400 flex items-center gap-1.5 text-sm">
+        <span>⚡</span> Aktifkan Cloud Audit di Supabase
+      </p>
+      <button onclick="copyAuditSQL()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold px-2.5 py-1 rounded-lg text-xs transition-colors shrink-0">
+        📋 Copy SQL
+      </button>
+    </div>
+    <p class="text-[var(--muted-foreground)] leading-relaxed mb-3">
+      Tabel <code class="text-amber-300 bg-amber-500/10 px-1 rounded">audit_logs</code> belum aktif di database Supabase. Saat ini catatan tersimpan di browser lokal. Klik <b>Copy SQL</b> lalu jalankan di tab <b>SQL Editor</b> Supabase agar log tersimpan di cloud & bisa dipantau dari semua device.
+    </p>
+  </div>
+
+  <!-- Audit List -->
+  <div id="audit-list" class="space-y-3">
+    <!-- Audit cards dynamically rendered here -->
   </div>
 </div>
 
@@ -415,7 +471,7 @@ function setRoute(hash) {
 }
 
 function showSetup(push = true) {
-  hide('screen-sessions'); hide('screen-game');
+  hide('screen-sessions'); hide('screen-game'); hide('screen-audit');
   show('screen-setup');
   const backBtn = document.getElementById('btn-setup-back');
   if (backBtn) {
@@ -427,7 +483,7 @@ function showSetup(push = true) {
 }
 
 function showSessionsScreen(push = true) {
-  hide('screen-setup'); hide('screen-game');
+  hide('screen-setup'); hide('screen-game'); hide('screen-audit');
   show('screen-sessions');
   renderSessionsList(allSessions);
   if (push) setRoute('#sessions');
@@ -452,7 +508,10 @@ async function init() {
     allSessions = data || [];
     
     const hash = window.location.hash;
-    if (hash.startsWith('#game-')) {
+    if (hash.startsWith('#audit')) {
+      const filterId = hash.replace('#audit-', '');
+      await showAuditScreen(filterId === '#audit' ? null : filterId, false);
+    } else if (hash.startsWith('#game-')) {
       const id = hash.replace('#game-', '');
       await openSession(id, false);
     } else if (hash === '#setup' || allSessions.length === 0) {
@@ -470,7 +529,10 @@ async function init() {
 // Handle Browser Back & Forward buttons
 window.addEventListener('popstate', () => {
   const hash = window.location.hash;
-  if (hash.startsWith('#game-')) {
+  if (hash.startsWith('#audit')) {
+    const filterId = hash.replace('#audit-', '');
+    showAuditScreen(filterId === '#audit' ? null : filterId, false);
+  } else if (hash.startsWith('#game-')) {
     const id = hash.replace('#game-', '');
     if (activeSessionId !== id || document.getElementById('screen-game').classList.contains('hidden')) {
       openSession(id, false);
@@ -621,7 +683,7 @@ async function openSession(id, push = true) {
     }
     activeSession = session;
     activeRounds  = rounds || [];
-    hide('screen-setup'); hide('screen-sessions'); show('screen-game');
+    hide('screen-setup'); hide('screen-sessions'); hide('screen-audit'); show('screen-game');
     renderGame();
     if (push) setRoute('#game-' + id);
   } catch (err) {
@@ -887,6 +949,7 @@ async function saveEditedScore() {
     }
     if (!targetRound) throw new Error('Round not found');
 
+    const oldScore = (targetRound.scores || {})[targetPlayerIdx] ?? 0;
     const updatedScores = { ...(targetRound.scores || {}), [targetPlayerIdx]: score };
     const { data, error } = await db.from('rounds')
       .update({ scores: updatedScores })
@@ -903,6 +966,23 @@ async function saveEditedScore() {
     }
 
     showToast('Score updated!', 'success');
+
+    // Audit logging
+    logAuditAction({
+      session_id: activeSessionId,
+      session_name: activeSession.name,
+      action: 'EDIT_SCORE',
+      player_name: activeSession.players[targetPlayerIdx] || 'Player',
+      round_number: targetRound.round_number || idx + 1,
+      phase: targetRound.phase ?? 1,
+      old_score: oldScore,
+      new_score: score,
+      details: {
+        round_id: targetId,
+        player_index: targetPlayerIdx,
+        description: `Koreksi skor ${activeSession.players[targetPlayerIdx]} di Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1}) dari ${fmtScore(oldScore)} ke ${fmtScore(score)}`
+      }
+    });
 
     // Check if updated score triggers 1000 RT condition
     const newTotals = calcTotals(activeSession, activeRounds);
@@ -938,11 +1018,32 @@ async function executeDeleteRound() {
   showLoading('Deleting round...');
 
   try {
+    const targetRound = activeRounds.find(r => String(r.id) === String(idToDelete));
     const { error } = await db.from('rounds').delete().eq('id', idToDelete);
     if (error) throw error;
 
     activeRounds = activeRounds.filter(r => String(r.id) !== String(idToDelete));
     showToast('Round deleted', 'success');
+
+    // Audit logging
+    if (targetRound) {
+      logAuditAction({
+        session_id: activeSessionId,
+        session_name: activeSession.name,
+        action: 'DELETE_ROUND',
+        player_name: 'Semua Pemain',
+        round_number: targetRound.round_number || 0,
+        phase: targetRound.phase ?? 1,
+        old_score: 0,
+        new_score: 0,
+        details: {
+          round_id: idToDelete,
+          deleted_scores: targetRound.scores || {},
+          description: `Menghapus Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1})`
+        }
+      });
+    }
+
     renderGame();
   } catch (err) {
     console.error('deleteRound error:', err);
@@ -1074,8 +1175,24 @@ async function startNewPhase() {
 
   const { error } = await db.from('sessions')
     .update({ rt_players: updatedRtPlayers }).eq('id', activeSessionId);
-  if (!error) activeSession.rt_players = updatedRtPlayers;
-  else showToast('Failed to save phase data');
+  if (!error) {
+    activeSession.rt_players = updatedRtPlayers;
+    logAuditAction({
+      session_id: activeSessionId,
+      session_name: activeSession.name,
+      action: 'NEW_PHASE',
+      player_name: activeSession.players[calonIdx],
+      round_number: 0,
+      phase: nextPhase,
+      old_score: 0,
+      new_score: 0,
+      details: {
+        description: `Memulai Phase ${nextPhase}. RT Baru: ${activeSession.players[calonIdx]}`
+      }
+    });
+  } else {
+    showToast('Failed to save phase data');
+  }
 
   hideLoading();
   hide('modal-rt');
@@ -1096,6 +1213,341 @@ async function deleteSession() {
   closeConfirm();
   if (allSessions.length > 0) { showSessionsScreen(); renderSessionsList(allSessions); }
   else showSetup();
+}
+
+// ── Audit & Activity Logging ──────────────────────────────
+const AUDIT_SQL = `CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+    session_name TEXT,
+    action TEXT NOT NULL,
+    player_name TEXT,
+    round_number INT,
+    phase INT,
+    old_score INT,
+    new_score INT,
+    details JSONB,
+    ip TEXT,
+    location TEXT,
+    isp TEXT,
+    device TEXT,
+    browser TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public full access to audit_logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);`;
+
+function copyAuditSQL() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(AUDIT_SQL).then(() => {
+      showToast('SQL berhasil disalin! Tempel di SQL Editor Supabase', 'success');
+    }).catch(() => {
+      prompt('Copy script SQL berikut:', AUDIT_SQL);
+    });
+  } else {
+    prompt('Copy script SQL berikut:', AUDIT_SQL);
+  }
+}
+
+function getDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  let os = 'Unknown Device';
+  if (/iPhone/i.test(ua)) os = 'iPhone (iOS)';
+  else if (/iPad/i.test(ua)) os = 'iPad (iPadOS)';
+  else if (/Android/i.test(ua)) {
+    const m = ua.match(/Android\s([0-9\.]*)/);
+    os = m ? `Android ${m[1]}` : 'Android';
+  } else if (/Windows NT 10.0/i.test(ua)) os = 'Windows 10/11';
+  else if (/Macintosh|Mac OS X/i.test(ua)) os = 'macOS';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+
+  let browser = 'Browser';
+  if (/Edg\//i.test(ua)) browser = 'Edge';
+  else if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) browser = 'Chrome';
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = 'Safari';
+  else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+
+  return {
+    os,
+    browser,
+    device: `${os} · ${browser}`,
+    raw_ua: ua
+  };
+}
+
+let cachedAuditClient = null;
+
+async function getClientAuditInfo() {
+  if (cachedAuditClient) return cachedAuditClient;
+  const dev = getDeviceInfo();
+  let ip = 'Unknown IP';
+  let location = 'Unknown Location';
+  let isp = '';
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3500);
+    const res = await fetch('https://ipwho.is/', { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success !== false) {
+        ip = data.ip || ip;
+        const locParts = [data.city, data.region, data.country].filter(Boolean);
+        location = locParts.length ? locParts.join(', ') : 'Unknown Location';
+        isp = data.connection?.isp || '';
+      }
+    }
+  } catch (e) {
+    try {
+      const res2 = await fetch('https://api.ipify.org?format=json');
+      if (res2.ok) {
+        const d2 = await res2.json();
+        ip = d2.ip || ip;
+      }
+    } catch (_) {}
+  }
+
+  cachedAuditClient = {
+    ip,
+    location,
+    isp,
+    device: dev.device,
+    browser: dev.browser,
+    user_agent: dev.raw_ua
+  };
+  return cachedAuditClient;
+}
+
+// Warm up client audit in background
+getClientAuditInfo().catch(() => {});
+
+async function logAuditAction(actionData) {
+  try {
+    const client = await getClientAuditInfo();
+    const payload = {
+      session_id: actionData.session_id,
+      session_name: actionData.session_name,
+      action: actionData.action, // 'EDIT_SCORE' | 'DELETE_ROUND' | 'NEW_PHASE'
+      player_name: actionData.player_name || null,
+      round_number: actionData.round_number || null,
+      phase: actionData.phase || 1,
+      old_score: actionData.old_score !== undefined ? actionData.old_score : null,
+      new_score: actionData.new_score !== undefined ? actionData.new_score : null,
+      details: actionData.details || {},
+      ip: client.ip,
+      location: client.location,
+      isp: client.isp,
+      device: client.device,
+      browser: client.browser,
+      user_agent: client.user_agent,
+      created_at: new Date().toISOString()
+    };
+
+    // 1. Attempt writing to Supabase audit_logs
+    let dbOk = false;
+    try {
+      const { error } = await db.from('audit_logs').insert(payload);
+      if (!error) dbOk = true;
+      else console.warn('Supabase audit_logs write warning:', error.message);
+    } catch (e) {
+      console.warn('Supabase audit_logs unavailable:', e);
+    }
+
+    // 2. Always persist in localStorage cache as fallback
+    try {
+      const stored = JSON.parse(localStorage.getItem('ceki_audit_logs') || '[]');
+      stored.unshift({ ...payload, id: 'local-' + Date.now(), cloud_synced: dbOk });
+      localStorage.setItem('ceki_audit_logs', JSON.stringify(stored.slice(0, 100)));
+    } catch (_) {}
+
+  } catch (err) {
+    console.error('Audit log failed:', err);
+  }
+}
+
+let currentAuditFilterSessionId = null;
+
+async function showAuditScreen(filterSessionId = null, push = true) {
+  currentAuditFilterSessionId = filterSessionId;
+  hide('screen-setup');
+  hide('screen-sessions');
+  hide('screen-game');
+  show('screen-audit');
+
+  const curBtn = document.getElementById('audit-filter-current');
+  if (activeSessionId && activeSession) {
+    curBtn.classList.remove('hidden');
+    curBtn.textContent = esc(activeSession.name);
+  } else {
+    curBtn.classList.add('hidden');
+  }
+
+  updateAuditFilterTabs();
+  await refreshAuditLogs();
+
+  if (push) {
+    setRoute(filterSessionId ? '#audit-' + filterSessionId : '#audit');
+  }
+}
+
+function closeAuditScreen() {
+  if (activeSessionId) {
+    hide('screen-audit');
+    show('screen-game');
+    setRoute('#game-' + activeSessionId);
+  } else {
+    showSessionsScreen();
+  }
+}
+
+function filterAuditSession(sessionId) {
+  currentAuditFilterSessionId = sessionId;
+  updateAuditFilterTabs();
+  refreshAuditLogs();
+}
+
+function updateAuditFilterTabs() {
+  const allBtn = document.getElementById('audit-filter-all');
+  const curBtn = document.getElementById('audit-filter-current');
+  const isCur = !!currentAuditFilterSessionId;
+
+  if (isCur) {
+    allBtn.className = 'text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] shrink-0 transition-all';
+    curBtn.className = 'text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white shadow-sm shrink-0 transition-all';
+  } else {
+    allBtn.className = 'text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white shadow-sm shrink-0 transition-all';
+    curBtn.className = 'text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] shrink-0 transition-all';
+  }
+}
+
+async function refreshAuditLogs() {
+  const container = document.getElementById('audit-list');
+  const banner = document.getElementById('audit-sql-banner');
+  container.innerHTML = `
+    <div class="text-center py-8 text-[var(--muted-foreground)]">
+      <div class="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+      <p class="text-xs">Memuat riwayat audit...</p>
+    </div>`;
+
+  let logs = [];
+  let isCloudActive = false;
+
+  try {
+    let q = db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(60);
+    if (currentAuditFilterSessionId) {
+      q = q.eq('session_id', currentAuditFilterSessionId);
+    }
+    const { data, error } = await q;
+    if (!error && data) {
+      logs = data;
+      isCloudActive = true;
+    }
+  } catch (e) {
+    console.warn('audit_logs query failed:', e);
+  }
+
+  if (!isCloudActive) {
+    banner.classList.remove('hidden');
+    try {
+      const local = JSON.parse(localStorage.getItem('ceki_audit_logs') || '[]');
+      if (currentAuditFilterSessionId) {
+        logs = local.filter(l => l.session_id === currentAuditFilterSessionId);
+      } else {
+        logs = local;
+      }
+    } catch (_) {}
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  renderAuditList(logs, isCloudActive);
+}
+
+function renderAuditList(logs, isCloudActive) {
+  const container = document.getElementById('audit-list');
+  if (!logs || !logs.length) {
+    container.innerHTML = `
+      <div class="text-center text-[var(--muted-foreground)] py-12 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6">
+        <div class="text-4xl mb-3">🛡️</div>
+        <p class="font-semibold text-sm text-[var(--foreground)]">Belum ada riwayat perubahan</p>
+        <p class="text-xs mt-1 max-w-xs mx-auto">Setiap kali ada skor yang diedit atau round yang dihapus, IP, device, dan lokasi pelaku akan tercatat otomatis di sini.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = logs.map(l => {
+    let actionBadge = '';
+    let actionDesc = '';
+
+    if (l.action === 'EDIT_SCORE') {
+      const diff = (l.new_score ?? 0) - (l.old_score ?? 0);
+      const diffColor = diff > 0 ? 'text-green-400 bg-green-500/10' : diff < 0 ? 'text-red-400 bg-red-500/10' : 'text-gray-400 bg-gray-500/10';
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">✏️ Skor Diedit</span>`;
+      actionDesc = `
+        <div class="mt-2 flex items-baseline gap-2 flex-wrap">
+          <span class="text-sm font-bold text-[var(--foreground)]">${esc(l.player_name || 'Player')}</span>
+          <span class="text-xs text-[var(--muted-foreground)]">${fmtScore(l.old_score ?? 0)} ➔</span>
+          <span class="text-sm font-bold ${scoreColor(l.new_score ?? 0)}">${fmtScore(l.new_score ?? 0)}</span>
+          <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded ${diffColor}">
+            (${diff >= 0 ? '+' : ''}${diff})
+          </span>
+        </div>`;
+    } else if (l.action === 'DELETE_ROUND') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">🗑️ Round Dihapus</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-red-300">${esc(l.details?.description || 'Round dihapus permanen')}</p>`;
+    } else if (l.action === 'NEW_PHASE') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">🔄 Phase Baru</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-purple-300">Phase ${l.phase} dimulai · Pak RT: <b>${esc(l.player_name || '')}</b></p>`;
+    } else {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">ℹ️ ${esc(l.action)}</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-[var(--muted-foreground)]">${esc(l.details?.description || '')}</p>`;
+    }
+
+    return `
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm hover:border-[var(--primary)]/30 transition-all">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          ${actionBadge}
+          <span class="text-[11px] text-[var(--muted-foreground)]">${formatDateTime(l.created_at)}</span>
+        </div>
+
+        <div class="mb-2">
+          <p class="text-xs text-[var(--muted-foreground)]">
+            Sesi: <span class="font-semibold text-[var(--foreground)]">${esc(l.session_name || 'Ceki Session')}</span>
+            ${l.phase ? ` · <span class="font-medium text-purple-400">Phase ${l.phase}</span>` : ''}
+            ${l.round_number ? ` · <span class="font-medium text-blue-400">Round ${l.round_number}</span>` : ''}
+          </p>
+          ${actionDesc}
+        </div>
+
+        <div class="mt-3 pt-2.5 border-t border-[var(--border)]/50 bg-[var(--background)]/50 rounded-xl p-2.5 space-y-1.5 text-xs text-[var(--muted-foreground)]">
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
+              <span>🌐</span> IP Address:
+            </span>
+            <span class="font-mono text-[11px] select-all bg-[var(--secondary)] px-2 py-0.5 rounded border border-[var(--border)]">${esc(l.ip || 'Unknown IP')}</span>
+          </div>
+          <div class="flex items-start justify-between gap-2">
+            <span class="flex items-center gap-1.5 font-medium text-[var(--foreground)] shrink-0">
+              <span>📍</span> Lokasi:
+            </span>
+            <span class="text-right text-[11px] text-[var(--foreground)] truncate max-w-[220px]" title="${esc(l.location || '')}">
+              ${esc(l.location || 'Unknown Location')}${l.isp ? ` <span class="text-[var(--muted-foreground)]">(${esc(l.isp)})</span>` : ''}
+            </span>
+          </div>
+          <div class="flex items-start justify-between gap-2">
+            <span class="flex items-center gap-1.5 font-medium text-[var(--foreground)] shrink-0">
+              <span>📱</span> Device:
+            </span>
+            <span class="text-right text-[11px] text-[var(--foreground)] truncate max-w-[220px]" title="${esc(l.device || '')}">
+              ${esc(l.device || 'Unknown Device')}
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ── Helpers ───────────────────────────────────────────────
