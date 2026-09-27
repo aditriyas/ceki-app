@@ -201,7 +201,7 @@
       <h2 class="text-xl font-bold flex items-center gap-2">
         <span>🛡️</span> Activity & Audit Log
       </h2>
-      <p class="text-xs text-[var(--muted-foreground)]">Riwayat perubahan skor, IP, device, dan lokasi</p>
+      <p class="text-xs text-[var(--muted-foreground)]">History of score entries, edits, deletions, IP, device, and location</p>
     </div>
     <button onclick="refreshAuditLogs()" class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2.5 py-1.5 rounded-lg hover:opacity-80 transition-opacity" title="Refresh Log">
       🔄
@@ -211,10 +211,10 @@
   <!-- Filter tabs -->
   <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
     <button id="audit-filter-all" onclick="filterAuditSession(null)" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--primary)] text-white shadow-sm shrink-0 transition-all">
-      Semua Sesi
+      All Sessions
     </button>
     <button id="audit-filter-current" onclick="filterAuditSession(activeSessionId)" class="hidden text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] shrink-0 transition-all">
-      Sesi Aktif
+      Active Session
     </button>
   </div>
 
@@ -222,14 +222,14 @@
   <div id="audit-sql-banner" class="hidden mb-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-xs">
     <div class="flex items-start justify-between gap-2 mb-2">
       <p class="font-semibold text-amber-400 flex items-center gap-1.5 text-sm">
-        <span>⚡</span> Aktifkan Cloud Audit di Supabase
+        <span>⚡</span> Enable Cloud Audit in Supabase
       </p>
       <button onclick="copyAuditSQL()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold px-2.5 py-1 rounded-lg text-xs transition-colors shrink-0">
         📋 Copy SQL
       </button>
     </div>
     <p class="text-[var(--muted-foreground)] leading-relaxed mb-3">
-      Tabel <code class="text-amber-300 bg-amber-500/10 px-1 rounded">audit_logs</code> belum aktif di database Supabase. Saat ini catatan tersimpan di browser lokal. Klik <b>Copy SQL</b> lalu jalankan di tab <b>SQL Editor</b> Supabase agar log tersimpan di cloud & bisa dipantau dari semua device.
+      The table <code class="text-amber-300 bg-amber-500/10 px-1 rounded">audit_logs</code> is not created in your Supabase database yet. Logs are currently stored in local browser cache. Click <b>Copy SQL</b> and run it in the <b>SQL Editor</b> tab in Supabase to sync audit logs across all devices.
     </p>
   </div>
 
@@ -980,7 +980,7 @@ async function saveEditedScore() {
       details: {
         round_id: targetId,
         player_index: targetPlayerIdx,
-        description: `Koreksi skor ${activeSession.players[targetPlayerIdx]} di Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1}) dari ${fmtScore(oldScore)} ke ${fmtScore(score)}`
+        description: `Edited score for ${activeSession.players[targetPlayerIdx]} in Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1}) from ${fmtScore(oldScore)} to ${fmtScore(score)}`
       }
     });
 
@@ -1031,7 +1031,7 @@ async function executeDeleteRound() {
         session_id: activeSessionId,
         session_name: activeSession.name,
         action: 'DELETE_ROUND',
-        player_name: 'Semua Pemain',
+        player_name: 'All Players',
         round_number: targetRound.round_number || 0,
         phase: targetRound.phase ?? 1,
         old_score: 0,
@@ -1039,7 +1039,7 @@ async function executeDeleteRound() {
         details: {
           round_id: idToDelete,
           deleted_scores: targetRound.scores || {},
-          description: `Menghapus Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1})`
+          description: `Deleted Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1})`
         }
       });
     }
@@ -1114,6 +1114,24 @@ async function submitScore() {
         showToast('Failed to save score: ' + (ins.error?.message || ''));
       }
     }
+
+    // Audit logging for score entry
+    const playerName = activeSession.players[pi] || 'Player';
+    const targetRoundNum = pendingRound ? (pendingRound.round_number || roundNum) : roundNum;
+    logAuditAction({
+      session_id: activeSessionId,
+      session_name: activeSession.name,
+      action: 'ENTER_SCORE',
+      player_name: playerName,
+      round_number: targetRoundNum,
+      phase: scoringPhase,
+      old_score: null,
+      new_score: score,
+      details: {
+        player_index: pi,
+        description: `Entered score for ${playerName} in Round ${targetRoundNum} (Phase ${scoringPhase}): ${fmtScore(score)}`
+      }
+    });
 
     // Check RT (≥1000) condition
     const newTotals = calcTotals(activeSession, activeRounds);
@@ -1242,12 +1260,12 @@ CREATE POLICY "Public full access to audit_logs" ON audit_logs FOR ALL USING (tr
 function copyAuditSQL() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(AUDIT_SQL).then(() => {
-      showToast('SQL berhasil disalin! Tempel di SQL Editor Supabase', 'success');
+      showToast('SQL copied to clipboard! Paste it into Supabase SQL Editor', 'success');
     }).catch(() => {
-      prompt('Copy script SQL berikut:', AUDIT_SQL);
+      prompt('Copy the following SQL script:', AUDIT_SQL);
     });
   } else {
-    prompt('Copy script SQL berikut:', AUDIT_SQL);
+    prompt('Copy the following SQL script:', AUDIT_SQL);
   }
 }
 
@@ -1429,7 +1447,7 @@ async function refreshAuditLogs() {
   container.innerHTML = `
     <div class="text-center py-8 text-[var(--muted-foreground)]">
       <div class="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      <p class="text-xs">Memuat riwayat audit...</p>
+      <p class="text-xs">Loading activity logs...</p>
     </div>`;
 
   let logs = [];
@@ -1472,8 +1490,8 @@ function renderAuditList(logs, isCloudActive) {
     container.innerHTML = `
       <div class="text-center text-[var(--muted-foreground)] py-12 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6">
         <div class="text-4xl mb-3">🛡️</div>
-        <p class="font-semibold text-sm text-[var(--foreground)]">Belum ada riwayat perubahan</p>
-        <p class="text-xs mt-1 max-w-xs mx-auto">Setiap kali ada skor yang diedit atau round yang dihapus, IP, device, dan lokasi pelaku akan tercatat otomatis di sini.</p>
+        <p class="font-semibold text-sm text-[var(--foreground)]">No activity recorded yet</p>
+        <p class="text-xs mt-1 max-w-xs mx-auto">Every time someone enters a score, edits a score, or deletes a round, the IP, device, and location will be logged here automatically.</p>
       </div>`;
     return;
   }
@@ -1482,10 +1500,18 @@ function renderAuditList(logs, isCloudActive) {
     let actionBadge = '';
     let actionDesc = '';
 
-    if (l.action === 'EDIT_SCORE') {
+    if (l.action === 'ENTER_SCORE') {
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-green-500/15 text-green-400 border border-green-500/30">➕ Score Entered</span>`;
+      actionDesc = `
+        <div class="mt-2 flex items-baseline gap-2 flex-wrap">
+          <span class="text-sm font-bold text-[var(--foreground)]">${esc(l.player_name || 'Player')}</span>
+          <span class="text-xs text-[var(--muted-foreground)]">scored</span>
+          <span class="text-sm font-bold ${scoreColor(l.new_score ?? 0)}">${fmtScore(l.new_score ?? 0)}</span>
+        </div>`;
+    } else if (l.action === 'EDIT_SCORE') {
       const diff = (l.new_score ?? 0) - (l.old_score ?? 0);
       const diffColor = diff > 0 ? 'text-green-400 bg-green-500/10' : diff < 0 ? 'text-red-400 bg-red-500/10' : 'text-gray-400 bg-gray-500/10';
-      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">✏️ Skor Diedit</span>`;
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">✏️ Score Edited</span>`;
       actionDesc = `
         <div class="mt-2 flex items-baseline gap-2 flex-wrap">
           <span class="text-sm font-bold text-[var(--foreground)]">${esc(l.player_name || 'Player')}</span>
@@ -1496,11 +1522,11 @@ function renderAuditList(logs, isCloudActive) {
           </span>
         </div>`;
     } else if (l.action === 'DELETE_ROUND') {
-      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">🗑️ Round Dihapus</span>`;
-      actionDesc = `<p class="mt-1 text-xs text-red-300">${esc(l.details?.description || 'Round dihapus permanen')}</p>`;
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">🗑️ Round Deleted</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-red-300">Round ${l.round_number || ''}${l.phase ? ` (Phase ${l.phase})` : ''} permanently deleted</p>`;
     } else if (l.action === 'NEW_PHASE') {
-      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">🔄 Phase Baru</span>`;
-      actionDesc = `<p class="mt-1 text-xs text-purple-300">Phase ${l.phase} dimulai · Pak RT: <b>${esc(l.player_name || '')}</b></p>`;
+      actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">🔄 New Phase</span>`;
+      actionDesc = `<p class="mt-1 text-xs text-purple-300">Phase ${l.phase} started · New Pak RT: <b>${esc(l.player_name || '')}</b></p>`;
     } else {
       actionBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">ℹ️ ${esc(l.action)}</span>`;
       actionDesc = `<p class="mt-1 text-xs text-[var(--muted-foreground)]">${esc(l.details?.description || '')}</p>`;
@@ -1515,7 +1541,7 @@ function renderAuditList(logs, isCloudActive) {
 
         <div class="mb-2">
           <p class="text-xs text-[var(--muted-foreground)]">
-            Sesi: <span class="font-semibold text-[var(--foreground)]">${esc(l.session_name || 'Ceki Session')}</span>
+            Session: <span class="font-semibold text-[var(--foreground)]">${esc(l.session_name || 'Ceki Session')}</span>
             ${l.phase ? ` · <span class="font-medium text-purple-400">Phase ${l.phase}</span>` : ''}
             ${l.round_number ? ` · <span class="font-medium text-blue-400">Round ${l.round_number}</span>` : ''}
           </p>
@@ -1531,7 +1557,7 @@ function renderAuditList(logs, isCloudActive) {
           </div>
           <div class="flex items-start justify-between gap-2">
             <span class="flex items-center gap-1.5 font-medium text-[var(--foreground)] shrink-0">
-              <span>📍</span> Lokasi:
+              <span>📍</span> Location:
             </span>
             <span class="text-right text-[11px] text-[var(--foreground)] truncate max-w-[220px]" title="${esc(l.location || '')}">
               ${esc(l.location || 'Unknown Location')}${l.isp ? ` <span class="text-[var(--muted-foreground)]">(${esc(l.isp)})</span>` : ''}
