@@ -432,6 +432,57 @@
           <div class="flex items-center gap-2"><span>🎴</span><input type="text" data-i18n-ph="setup_player_ph" placeholder="Player 4" class="player-name-input flex-1 bg-[var(--background)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"/></div>
         </div>
       </div>
+
+      <!-- Max Score Target per Phase -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-1.5">
+          <label data-i18n="setup_target_label" class="block text-xs font-bold text-amber-300 uppercase tracking-wider">
+            🎯 MAX SCORE TARGET (PER PHASE)
+          </label>
+          <span class="text-[10px] text-amber-400 font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30" id="target-score-badge">1,000 pts</span>
+        </div>
+        <p data-i18n="setup_target_sub" class="text-[11px] text-[var(--muted-foreground)] mb-2.5">
+          Score threshold before phase ends & Pak RT is assigned (presets or custom):
+        </p>
+
+        <!-- Preset buttons -->
+        <div class="grid grid-cols-3 gap-2 mb-2.5">
+          <button type="button" onclick="selectTargetPreset(1000)" id="preset-target-1000"
+            class="target-preset-btn py-2 px-3 rounded-xl border border-amber-500/60 bg-amber-500/20 text-amber-300 font-bold text-xs transition-all flex flex-col items-center shadow-sm">
+            <span class="text-sm font-black">1,000</span>
+            <span class="text-[9px] opacity-80" data-i18n="setup_preset_standard">Standard</span>
+          </button>
+          <button type="button" onclick="selectTargetPreset(800)" id="preset-target-800"
+            class="target-preset-btn py-2 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] font-bold text-xs hover:border-amber-400/50 hover:text-[var(--foreground)] transition-all flex flex-col items-center">
+            <span class="text-sm font-black">800</span>
+            <span class="text-[9px] opacity-80" data-i18n="setup_preset_medium">Medium</span>
+          </button>
+          <button type="button" onclick="selectTargetPreset(500)" id="preset-target-500"
+            class="target-preset-btn py-2 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] font-bold text-xs hover:border-amber-400/50 hover:text-[var(--foreground)] transition-all flex flex-col items-center">
+            <span class="text-sm font-black">500</span>
+            <span class="text-[9px] opacity-80" data-i18n="setup_preset_fast">Fast Game</span>
+          </button>
+        </div>
+
+        <!-- Custom Input -->
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs text-[var(--muted-foreground)]">
+            ⚙️
+          </div>
+          <input id="input-target-score" type="number" step="5" min="10" value="1000"
+            oninput="handleCustomTargetInput()"
+            data-i18n-ph="setup_target_custom_ph"
+            placeholder="Custom limit (multiple of 5, > 5)..."
+            class="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl pl-9 pr-14 py-2.5 text-xs outline-none focus:border-[var(--primary)] transition-colors font-medium text-[var(--foreground)]" />
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[11px] font-bold text-[var(--muted-foreground)]">
+            PTS
+          </div>
+        </div>
+        <p class="text-[10px] text-[var(--muted-foreground)] mt-1.5 flex items-center gap-1">
+          <span>ℹ️</span> <span data-i18n="setup_target_rules">Must be greater than 5 and divisible by 5 (e.g. 500, 750, 800, 1000).</span>
+        </p>
+      </div>
+
       <div id="setup-error" class="hidden text-red-400 text-xs mb-3 text-center"></div>
       <button onclick="startGame()" data-i18n="setup_submit_btn" class="w-full btn-gold rounded-xl py-3 text-sm active:scale-[0.98] transition-all">
         OPEN VIP TABLE 🎰
@@ -738,9 +789,9 @@
   <div class="bg-gradient-to-b from-[#1e1330] via-[#140b22] to-[#0a0612] border-2 border-amber-400 rounded-3xl p-6 w-full max-w-xs shadow-2xl anim-in text-center relative overflow-hidden pulse-gold">
     <div class="text-5xl mb-2 animate-bounce">🎰</div>
     <h3 data-i18n="modal_rt_sensational" class="font-casino font-black text-2xl gold-text tracking-wider uppercase mb-1">SENSATIONAL!</h3>
-    <p data-i18n="modal_rt_hit" class="text-xs font-bold text-amber-300 tracking-widest uppercase mb-4">SCORE HIT 1,000 POINTS!</p>
+    <p id="rt-modal-hit-title" class="text-xs font-bold text-amber-300 tracking-widest uppercase mb-4">SCORE HIT TARGET POINTS!</p>
 
-    <!-- Who hit 1000 -->
+    <!-- Who hit target -->
     <div id="rt-hit-list" class="mb-4 space-y-2"></div>
 
     <!-- Calon RT → RT transition -->
@@ -760,7 +811,7 @@
       <p data-i18n="modal_rt_quote" class="text-[10px] text-slate-400 italic mt-2">🃏 "Must shuffle cards for the next phase!"</p>
     </div>
 
-    <p data-i18n="modal_rt_prompt" class="text-xs text-slate-400 mb-3">Table reached 1,000 pts! Start next phase or close table?</p>
+    <p id="rt-modal-prompt-text" class="text-xs text-slate-400 mb-3">Table reached target score! Start next phase or close table?</p>
     <div class="space-y-2">
       <button onclick="startNewPhase()" data-i18n="modal_btn_new_phase" class="w-full btn-gold rounded-xl py-2.5 text-xs font-black shadow-lg">NEW PHASE 🔄</button>
       <button onclick="closeSessionFromRTModal()" data-i18n="modal_btn_close_session" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-amber-300 rounded-xl py-2.5 text-xs font-bold transition-all">CLOSE TABLE (FINISH) 🔒</button>
@@ -848,6 +899,15 @@ const translations = {
     setup_players_label: "4 PLAYERS\' NAMES (PLAYER 1 TO 4)",
     setup_players_label_classic: "Player Names (4 players)",
     setup_player_ph: "Player",
+    setup_target_label: "MAX SCORE TARGET (PER PHASE)",
+    setup_target_label_classic: "Score Limit (Per Phase)",
+    setup_target_sub: "Score threshold before phase ends & Pak RT is assigned (presets or custom):",
+    setup_preset_standard: "Standard",
+    setup_preset_medium: "Medium",
+    setup_preset_fast: "Fast Game",
+    setup_target_custom_ph: "Custom limit (multiple of 5, > 5)...",
+    setup_target_rules: "Must be greater than 5 and divisible by 5 (e.g. 500, 750, 800, 1000).",
+    err_target_score_invalid: "Target score must be greater than 5 and a multiple of 5 (e.g. 500, 800, 1000).",
     setup_submit_btn: "OPEN VIP TABLE 🎰",
     setup_submit_btn_classic: "Start Session 🀄",
     setup_saved_header: "SAVED TABLES",
@@ -1038,6 +1098,15 @@ const translations = {
     setup_players_label: "NAMA 4 PEMAIN (PEMAIN 1 S/D 4)",
     setup_players_label_classic: "Nama Pemain (4 pemain)",
     setup_player_ph: "Pemain",
+    setup_target_label: "BATAS SKOR MAKSIMAL (PER FASE)",
+    setup_target_label_classic: "Batas Skor (Per Fase)",
+    setup_target_sub: "Batas skor untuk ganti fase & tentukan Pak RT (preset atau custom):",
+    setup_preset_standard: "Standar",
+    setup_preset_medium: "Sedang",
+    setup_preset_fast: "Cepat",
+    setup_target_custom_ph: "Ketik skor sendiri (kelipatan 5, > 5)...",
+    setup_target_rules: "Nilai harus di atas 5 dan habis dibagi 5 (contoh: 500, 750, 800, 1000).",
+    err_target_score_invalid: "Target skor harus berupa angka di atas 5 dan kelipatan 5 (contoh: 500, 800, 1000).",
     setup_submit_btn: "BUKA MEJA VIP 🎰",
     setup_submit_btn_classic: "Mulai Sesi 🀄",
     setup_saved_header: "SESI TERSIMPAN",
@@ -1397,6 +1466,49 @@ function calcTotals(session, rounds) {
   );
 }
 
+// ── Target Score Helpers ──────────────────────────────────
+function getTargetScore(session) {
+  if (!session) return 1000;
+  if (typeof session.target_score === 'number' && session.target_score > 5) return session.target_score;
+  const entry = (session.rt_players || []).find(e => e && typeof e.target_score === 'number');
+  if (entry && entry.target_score > 5) return entry.target_score;
+  return 1000;
+}
+
+let selectedTargetScore = 1000;
+
+function selectTargetPreset(val) {
+  selectedTargetScore = val;
+  const input = document.getElementById('input-target-score');
+  if (input) input.value = val;
+  updateTargetScoreUI();
+}
+
+function handleCustomTargetInput() {
+  const input = document.getElementById('input-target-score');
+  if (!input) return;
+  const val = parseInt(input.value.trim(), 10);
+  selectedTargetScore = !isNaN(val) ? val : null;
+  updateTargetScoreUI();
+}
+
+function updateTargetScoreUI() {
+  const badge = document.getElementById('target-score-badge');
+  if (badge) {
+    badge.textContent = `${(selectedTargetScore || 0).toLocaleString()} pts`;
+  }
+  [1000, 800, 500].forEach(p => {
+    const btn = document.getElementById(`preset-target-${p}`);
+    if (btn) {
+      if (selectedTargetScore === p) {
+        btn.className = 'target-preset-btn py-2 px-3 rounded-xl border border-amber-500/60 bg-amber-500/20 text-amber-300 font-bold text-xs transition-all flex flex-col items-center shadow-sm';
+      } else {
+        btn.className = 'target-preset-btn py-2 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] font-bold text-xs hover:border-amber-400/50 hover:text-[var(--foreground)] transition-all flex flex-col items-center';
+      }
+    }
+  });
+}
+
 // ── RT Label Logic ────────────────────────────────────────
 // "Calon RT" = current last-place in active phase (dynamic)
 function getCalonRTIndex(session, rounds) {
@@ -1677,6 +1789,7 @@ function showSetup(push = true) {
     else backBtn.classList.add('hidden');
   }
   renderSavedSessionsMini();
+  updateTargetScoreUI();
   if (push) setRoute('#setup');
 }
 
@@ -1788,11 +1901,21 @@ async function startGame() {
   const players = Array.from(inputs).map(i => i.value.trim());
   const errEl   = document.getElementById('setup-error');
 
+  const targetInput = document.getElementById('input-target-score');
+  let targetScore = parseInt(targetInput ? targetInput.value.trim() : '1000', 10);
+
+  if (errEl) errEl.classList.add('hidden');
   if (!name)                                    { showErr(errEl, t('err_session_empty')); return; }
   if (players.some(p => !p))                    { showErr(errEl, t('err_players_filled')); return; }
   if (new Set(players).size !== players.length) { showErr(errEl, t('err_players_unique')); return; }
+  if (isNaN(targetScore) || targetScore <= 5 || targetScore % 5 !== 0) {
+    showErr(errEl, t('err_target_score_invalid'));
+    return;
+  }
+
   showLoading('Creating session...');
-  let res = await db.from('sessions').insert({ name, players, rt_players: [] }).select().single();
+  const rt_players = [{ target_score: targetScore }];
+  let res = await db.from('sessions').insert({ name, players, rt_players }).select().single();
   
   // Fallback if rt_players column doesn't exist yet in Supabase
   if (res.error && res.error.message && (res.error.message.includes('rt_players') || res.error.code === '42703')) {
@@ -1812,6 +1935,7 @@ async function startGame() {
   updateTickerWithWallOfShame();
   document.getElementById('input-session').value = '';
   inputs.forEach(i => i.value = '');
+  selectTargetPreset(1000);
   openSession(data.id);
 }
 
@@ -1848,6 +1972,7 @@ async function renderSessionsList(sessions) {
     const minTotal   = Math.min(...totals);
     const hasScoreDiff = doneCount > 0 && maxTotal !== minTotal;
     const sessionHasBadges = hasScoreDiff || (rtIdx !== null);
+    const targetScore = getTargetScore(s);
     const subtitle   = t('sessions_phase_round', {
       phase: curPhase,
       rounds: doneCount,
@@ -1862,7 +1987,10 @@ async function renderSessionsList(sessions) {
               <h3 class="font-bold text-base truncate hover:text-[var(--primary)] transition-colors">${esc(s.name)}</h3>
               ${isClosed ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-600/30 text-slate-300 border border-slate-500/40 shrink-0">🔒 ${t('badge_closed')}</span>` : ''}
             </div>
-            <p class="text-xs text-[var(--muted-foreground)]">${subtitle}</p>
+            <p class="text-xs text-[var(--muted-foreground)] flex items-center gap-1.5 flex-wrap mt-0.5">
+              <span>${subtitle}</span>
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">🎯 Target: ${targetScore.toLocaleString()} pts</span>
+            </p>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <span class="text-xs bg-[var(--secondary)] text-[var(--secondary-foreground)] px-2 py-1 rounded-full">${formatDateShort(s.created_at)}</span>
@@ -1957,13 +2085,15 @@ function renderGame() {
   const isCasino = (currentTheme === 'casino');
   const isClosed = isSessionClosed(session);
 
+  const targetScore = getTargetScore(session);
+
   document.getElementById('game-title').textContent = session.name;
   const doneCount = rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).length;
-  document.getElementById('game-subtitle').textContent = t('sessions_phase_round', {
+  document.getElementById('game-subtitle').textContent = `${t('sessions_phase_round', {
     phase,
     rounds: doneCount,
     players: formatDateTime(session.created_at)
-  });
+  })} · 🎯 Target: ${targetScore.toLocaleString()} pts`;
 
   // Closed badge and Toggle button in header
   const closedBadge = document.getElementById('game-closed-badge');
@@ -1983,8 +2113,12 @@ function renderGame() {
 
   // Phase info badges
   const phaseBadges = document.getElementById('phase-badges');
-  phaseBadges.innerHTML = (session.rt_players || []).length > 0
-    ? `<span class="badge badge-phase">${currentLang === 'id' ? 'Fase' : 'Phase'} ${phase}</span>` : '';
+  let badgesHtml = '';
+  if ((session.rt_players || []).length > 0) {
+    badgesHtml += `<span class="badge badge-phase">${currentLang === 'id' ? 'Fase' : 'Phase'} ${phase}</span>`;
+  }
+  badgesHtml += `<span class="badge border border-amber-500/40 text-amber-300 bg-amber-500/10 font-bold">🎯 Target: ${targetScore.toLocaleString()} pts</span>`;
+  phaseBadges.innerHTML = badgesHtml;
 
   // Leaderboard
   const maxTotal  = Math.max(...totals);
@@ -2295,11 +2429,12 @@ async function saveEditedScore() {
       }
     });
 
-    // Check if updated score triggers 1000 RT condition
+    // Check if updated score triggers target score RT condition
+    const targetScore = getTargetScore(activeSession);
     const newTotals = calcTotals(activeSession, activeRounds);
     rtTriggerPlayers = activeSession.players
       .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
-      .filter(p => p.total >= 1000);
+      .filter(p => p.total >= targetScore);
 
     if (rtTriggerPlayers.length > 0) showRTModal();
     else renderGame();
@@ -2454,11 +2589,12 @@ async function submitScore() {
       }
     });
 
-    // Check RT (≥1000) condition
+    // Check RT (>= targetScore) condition
+    const targetScore = getTargetScore(activeSession);
     const newTotals = calcTotals(activeSession, activeRounds);
     rtTriggerPlayers = activeSession.players
       .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
-      .filter(p => p.total >= 1000);
+      .filter(p => p.total >= targetScore);
 
     if (rtTriggerPlayers.length > 0) showRTModal();
     else renderGame();
@@ -2472,7 +2608,21 @@ async function submitScore() {
 
 // ── RT Modal ──────────────────────────────────────────────
 function showRTModal() {
-  // Players who hit 1000
+  const targetScore = getTargetScore(activeSession);
+  const hitEl = document.getElementById('rt-modal-hit-title');
+  if (hitEl) {
+    hitEl.textContent = currentLang === 'id'
+      ? `SKOR TEMBUS ${targetScore.toLocaleString()} POIN!`
+      : `SCORE HIT ${targetScore.toLocaleString()} POINTS!`;
+  }
+  const promptEl = document.getElementById('rt-modal-prompt-text');
+  if (promptEl) {
+    promptEl.textContent = currentLang === 'id'
+      ? `Meja mencapai batas ${targetScore.toLocaleString()} poin! Mau lanjut ke fase baru atau tutup meja?`
+      : `Table reached ${targetScore.toLocaleString()} pts! Start next phase or close table?`;
+  }
+
+  // Players who hit target
   document.getElementById('rt-hit-list').innerHTML = rtTriggerPlayers.map(p => `
     <div class="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
       <span class="font-semibold">${esc(p.name)}</span>
