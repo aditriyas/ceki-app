@@ -123,7 +123,7 @@
     .animate-marquee {
       display: inline-block;
       white-space: nowrap;
-      animation: marquee 35s linear infinite;
+      animation: marquee 110s linear infinite;
     }
     .animate-marquee:hover {
       animation-play-state: paused;
@@ -504,11 +504,60 @@
       </h2>
       <p data-i18n="sessions_subtitle" class="text-xs text-[var(--muted-foreground)]">Select a table to view live scoreboard</p>
     </div>
-    <button onclick="showSetup()" class="btn-gold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-lg">
+    <button onclick="showSetup()" class="btn-gold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shrink-0">
       <span>➕</span> <span data-i18n="sessions_btn_new">NEW TABLE</span>
     </button>
   </div>
+
+  <!-- Search & Page Size Bar -->
+  <div class="mb-4 space-y-2.5">
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs text-[var(--muted-foreground)]">
+        🔍
+      </div>
+      <input id="input-session-search" type="text" oninput="handleSessionSearch(this.value)"
+        data-i18n-ph="sessions_search_ph"
+        placeholder="Search by table name or player name..."
+        class="w-full bg-[var(--card)] border border-[var(--border)] rounded-xl pl-9 pr-9 py-2.5 text-xs outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] transition-all font-medium shadow-sm" />
+      <button id="btn-clear-session-search" onclick="clearSessionSearch()"
+        class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-[var(--muted-foreground)] hover:text-amber-400 transition-colors"
+        title="Clear search">
+        ✕
+      </button>
+    </div>
+
+    <!-- Page Size Presets and Results Counter -->
+    <div class="flex items-center justify-between gap-2 px-1">
+      <div class="flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+        <span data-i18n="pagination_show">Show:</span>
+        <div class="inline-flex rounded-lg bg-[var(--card)] border border-[var(--border)] p-0.5" id="page-size-selector">
+          <button type="button" onclick="setSessionPageSize(5)" id="page-size-5" class="px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all">5</button>
+          <button type="button" onclick="setSessionPageSize(10)" id="page-size-10" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--primary)] text-white shadow-sm transition-all">10</button>
+          <button type="button" onclick="setSessionPageSize(15)" id="page-size-15" class="px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all">15</button>
+          <button type="button" onclick="setSessionPageSize(20)" id="page-size-20" class="px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all">20</button>
+          <button type="button" onclick="setSessionPageSize('all')" id="page-size-all" class="px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all">All</button>
+        </div>
+      </div>
+      <span id="pagination-info-text" class="text-[11px] text-[var(--muted-foreground)] font-medium"></span>
+    </div>
+  </div>
+
   <div id="sessions-list" class="space-y-3"></div>
+
+  <!-- Pagination Controls Footer -->
+  <div id="sessions-pagination-footer" class="mt-5 flex items-center justify-between gap-2 pt-3 border-t border-[var(--border)]/40">
+    <button id="btn-page-prev" onclick="changeSessionPage(-1)"
+      class="px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-amber-400 text-xs font-semibold text-[var(--foreground)] transition-all flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none shadow-sm">
+      <span>←</span> <span data-i18n="pagination_prev">Prev</span>
+    </button>
+    
+    <div id="pagination-page-pills" class="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-xs py-1"></div>
+    
+    <button id="btn-page-next" onclick="changeSessionPage(1)"
+      class="px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-amber-400 text-xs font-semibold text-[var(--foreground)] transition-all flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none shadow-sm">
+      <span data-i18n="pagination_next">Next</span> <span>→</span>
+    </button>
+  </div>
 </div>
 
 <!-- Game Screen -->
@@ -923,6 +972,13 @@ const translations = {
     sessions_empty_title: "No tables yet. Open a new one!",
     sessions_empty_title_classic: "No sessions yet. Create a new one!",
     sessions_phase_round: "Phase {phase} · {rounds} rounds · {players}",
+    sessions_search_ph: "Search table or player name...",
+    pagination_show: "Show:",
+    pagination_prev: "Prev",
+    pagination_next: "Next",
+    sessions_no_search_title: "No Tables Found",
+    sessions_no_search_sub: "No tables or players match \"{query}\"",
+    sessions_btn_clear_search: "Clear Search",
 
     // Game Screen
     game_btn_delete: "Delete Table",
@@ -1122,6 +1178,13 @@ const translations = {
     sessions_empty_title: "Belum ada sesi meja. Buka meja baru!",
     sessions_empty_title_classic: "Belum ada sesi tersimpan. Buat sesi baru!",
     sessions_phase_round: "Fase {phase} · {rounds} putaran · {players}",
+    sessions_search_ph: "Cari nama meja atau pemain...",
+    pagination_show: "Tampil:",
+    pagination_prev: "Prev",
+    pagination_next: "Next",
+    sessions_no_search_title: "Meja Tidak Ditemukan",
+    sessions_no_search_sub: "Tidak ada meja atau pemain yang cocok dengan \"{query}\"",
+    sessions_btn_clear_search: "Reset Pencarian",
 
     // Game Screen
     game_btn_delete: "Hapus Meja",
@@ -1605,6 +1668,11 @@ function updateTickerWithWallOfShame() {
   const antiCheat = t('ticker_anti_cheat_text');
 
   tickerEl.innerHTML = `${arena} &nbsp;·&nbsp; ${hot} &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">${shameTitle}</span> ${shameContent} &nbsp;·&nbsp; ${antiCheat}`;
+
+  // Dynamically set comfortable, readable scroll duration (~7.5 characters per second)
+  const charLength = tickerEl.textContent.length;
+  const duration = Math.max(65, Math.min(300, Math.round(charLength / 7.5)));
+  tickerEl.style.animationDuration = `${duration}s`;
 }
 
 async function toggleCloseSession(sessionId = null) {
@@ -1939,26 +2007,176 @@ async function startGame() {
   openSession(data.id);
 }
 
+// ── Sessions Search & Pagination State ────────────────────
+let sessionSearchQuery = '';
+let sessionPageSize    = 10; // 'all' or number 5, 10, 15, 20
+let sessionCurrentPage = 1;
+
+function getFilteredSessions() {
+  let list = allSessions || [];
+  if (sessionSearchQuery) {
+    const q = sessionSearchQuery.toLowerCase().trim();
+    list = list.filter(s => {
+      const nameMatch = (s.name || '').toLowerCase().includes(q);
+      const playerMatch = (s.players || []).some(p => (p || '').toLowerCase().includes(q));
+      return nameMatch || playerMatch;
+    });
+  }
+  return list;
+}
+
+function handleSessionSearch(query) {
+  sessionSearchQuery = query;
+  sessionCurrentPage = 1;
+  const clearBtn = document.getElementById('btn-clear-session-search');
+  if (clearBtn) {
+    clearBtn.classList.toggle('hidden', !query);
+  }
+  renderSessionsList();
+}
+
+function clearSessionSearch() {
+  const input = document.getElementById('input-session-search');
+  if (input) input.value = '';
+  handleSessionSearch('');
+}
+
+function setSessionPageSize(size) {
+  sessionPageSize = size;
+  sessionCurrentPage = 1;
+  updatePageSizeUI();
+  renderSessionsList();
+}
+
+function updatePageSizeUI() {
+  ['5', '10', '15', '20', 'all'].forEach(s => {
+    const btn = document.getElementById(`page-size-${s}`);
+    if (btn) {
+      const isActive = String(sessionPageSize) === s;
+      if (isActive) {
+        btn.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--primary)] text-white shadow-sm transition-all';
+      } else {
+        btn.className = 'px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all';
+      }
+    }
+  });
+}
+
+function changeSessionPage(delta) {
+  sessionCurrentPage += delta;
+  renderSessionsList();
+  const el = document.getElementById('screen-sessions');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goToSessionPage(pageNum) {
+  sessionCurrentPage = pageNum;
+  renderSessionsList();
+  const el = document.getElementById('screen-sessions');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 // ── Sessions List ─────────────────────────────────────────
-async function renderSessionsList(sessions) {
+async function renderSessionsList(sessions = null) {
+  if (sessions && Array.isArray(sessions)) {
+    allSessions = sessions;
+  }
   const list = document.getElementById('sessions-list');
-  if (!sessions.length) {
-    list.innerHTML = `<div class="text-center text-[var(--muted-foreground)] py-12">
+  const footer = document.getElementById('sessions-pagination-footer');
+  const infoEl = document.getElementById('pagination-info-text');
+
+  updatePageSizeUI();
+
+  if (!allSessions || allSessions.length === 0) {
+    list.innerHTML = `<div class="text-center text-[var(--muted-foreground)] py-12 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6">
       <div class="text-4xl mb-3">🀄</div>
-      <p class="text-sm">${t('sessions_empty_title')}</p></div>`;
+      <p class="font-bold text-sm text-[var(--foreground)]">${t('sessions_empty_title')}</p>
+    </div>`;
+    if (footer) footer.classList.add('hidden');
+    if (infoEl) infoEl.textContent = '';
     return;
   }
-  const { data: rounds } = await db.from('rounds')
-    .select('session_id, scores, phase, is_complete').in('session_id', sessions.map(s => s.id));
-  const roundsMap = {};
-  (rounds || []).forEach(r => {
-    if (!roundsMap[r.session_id]) roundsMap[r.session_id] = [];
-    roundsMap[r.session_id].push(r);
-  });
-  allSessionsRoundsMap = roundsMap;
-  updateTickerWithWallOfShame();
 
-  list.innerHTML = sessions.map(s => {
+  const filtered = getFilteredSessions();
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="text-center text-[var(--muted-foreground)] py-12 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 anim-in">
+        <div class="text-4xl mb-3">🔍</div>
+        <p class="font-bold text-sm text-[var(--foreground)]">${t('sessions_no_search_title')}</p>
+        <p class="text-xs mt-1 max-w-xs mx-auto text-[var(--muted-foreground)]">${t('sessions_no_search_sub', { query: esc(sessionSearchQuery) })}</p>
+        <button onclick="clearSessionSearch()" class="mt-4 text-xs px-3.5 py-1.5 rounded-xl border border-amber-500/40 text-amber-300 bg-amber-500/10 font-bold hover:bg-amber-500/20 transition-all">
+          ${t('sessions_btn_clear_search')}
+        </button>
+      </div>`;
+    if (footer) footer.classList.add('hidden');
+    if (infoEl) infoEl.textContent = currentLang === 'id' ? '0 meja' : '0 tables';
+    return;
+  }
+
+  const isAll = (sessionPageSize === 'all');
+  const pageSize = isAll ? filtered.length : (parseInt(sessionPageSize, 10) || 10);
+  const totalPages = isAll ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
+
+  if (sessionCurrentPage > totalPages) sessionCurrentPage = totalPages;
+  if (sessionCurrentPage < 1) sessionCurrentPage = 1;
+
+  const startIdx = (sessionCurrentPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, filtered.length);
+  const pageItems = filtered.slice(startIdx, endIdx);
+
+  if (infoEl) {
+    infoEl.textContent = currentLang === 'id'
+      ? `${startIdx + 1}–${endIdx} dari ${filtered.length} meja`
+      : `${startIdx + 1}–${endIdx} of ${filtered.length} tables`;
+  }
+
+  if (footer) {
+    if (totalPages <= 1) {
+      footer.classList.add('hidden');
+    } else {
+      footer.classList.remove('hidden');
+
+      const prevBtn = document.getElementById('btn-page-prev');
+      const nextBtn = document.getElementById('btn-page-next');
+      if (prevBtn) prevBtn.disabled = (sessionCurrentPage <= 1);
+      if (nextBtn) nextBtn.disabled = (sessionCurrentPage >= totalPages);
+
+      const pillsContainer = document.getElementById('pagination-page-pills');
+      if (pillsContainer) {
+        let pillsHtml = '';
+        for (let p = 1; p <= totalPages; p++) {
+          const isCur = (p === sessionCurrentPage);
+          pillsHtml += `
+            <button type="button" onclick="goToSessionPage(${p})"
+              class="w-7 h-7 rounded-lg text-xs font-bold transition-all shrink-0 ${isCur ? 'bg-[var(--primary)] text-white shadow-sm' : 'border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}">
+              ${p}
+            </button>`;
+        }
+        pillsContainer.innerHTML = pillsHtml;
+      }
+    }
+  }
+
+  // Ensure roundsMap is loaded for pageItems
+  const neededSessionIds = pageItems.map(s => s.id).filter(id => !allSessionsRoundsMap[id]);
+  if (neededSessionIds.length > 0) {
+    try {
+      const { data: rData } = await db.from('rounds')
+        .select('session_id, scores, phase, is_complete')
+        .in('session_id', neededSessionIds);
+      (rData || []).forEach(r => {
+        if (!allSessionsRoundsMap[r.session_id]) allSessionsRoundsMap[r.session_id] = [];
+        allSessionsRoundsMap[r.session_id].push(r);
+      });
+    } catch (e) {
+      console.warn('Could not fetch rounds for page items:', e);
+    }
+  }
+
+  const roundsMap = allSessionsRoundsMap;
+
+  list.innerHTML = pageItems.map(s => {
     const isClosed   = isSessionClosed(s);
     const sRounds    = roundsMap[s.id] || [];
     const totals     = calcTotals(s, sRounds);
