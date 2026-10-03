@@ -1104,6 +1104,48 @@
   </div>
 </div>
 
+<!-- Confirm Close / Reopen Table Modal -->
+<div id="modal-toggle-close" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/50 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-5 sm:p-6 w-full max-w-xs shadow-2xl anim-in text-center relative overflow-hidden flex flex-col">
+    <!-- Icon Container -->
+    <div id="toggle-close-icon-container" class="w-13 h-13 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-3 shadow-inner text-2xl text-amber-300">
+      <span id="toggle-close-icon">🏁</span>
+    </div>
+    <h3 id="toggle-close-title" class="font-bold text-lg text-[var(--foreground)]">Close Table?</h3>
+    <p id="toggle-close-session-name" class="text-xs font-semibold text-amber-400 mt-1 truncate"></p>
+    <p id="toggle-close-desc" class="text-xs text-[var(--muted-foreground)] mt-1.5 leading-relaxed">
+      Closed tables become read-only and scores cannot be modified.
+    </p>
+
+    <div class="flex gap-2.5 mt-4">
+      <button onclick="closeToggleCloseModal()" data-i18n="modal_btn_cancel" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-xs hover:opacity-80 transition-all">Cancel</button>
+      <button id="btn-toggle-close-confirm" onclick="executeToggleCloseSession()" class="flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md">
+        <span id="btn-toggle-close-confirm-text">Close Table 🏁</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Universal Custom Alert / Confirm / Prompt Modal -->
+<div id="modal-custom-dialog" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/60 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-5 sm:p-6 w-full max-w-xs shadow-2xl anim-in text-center relative overflow-hidden flex flex-col">
+    <div id="dialog-icon-container" class="w-13 h-13 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-3 shadow-inner text-2xl text-amber-300">
+      <span id="dialog-icon">ℹ️</span>
+    </div>
+    <h3 id="dialog-title" class="font-bold text-lg text-[var(--foreground)]">Notification</h3>
+    <p id="dialog-message" class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed break-words"></p>
+    
+    <div id="dialog-input-container" class="hidden mt-3 text-left">
+      <textarea id="dialog-input-text" rows="5" class="w-full bg-black/40 border border-white/20 rounded-xl p-2.5 text-xs text-amber-200 outline-none focus:border-amber-400 font-mono transition-all resize-none shadow-inner" readonly></textarea>
+    </div>
+
+    <div class="flex gap-2.5 mt-4" id="dialog-buttons">
+      <button id="dialog-btn-cancel" class="hidden flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-xs hover:opacity-80 transition-all">Cancel</button>
+      <button id="dialog-btn-confirm" class="flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Supabase ──────────────────────────────────────────────
 const { createClient } = supabase;
@@ -1296,6 +1338,14 @@ const translations = {
     modal_btn_new_phase_classic: "Start New Phase",
     modal_btn_close_session: "CLOSE TABLE (FINISH) 🏁",
     modal_btn_close_session_classic: "Close Session",
+
+    // Modals - Close / Reopen Session
+    modal_close_sess_title: "Close Table (Finish)?",
+    modal_close_sess_desc: "Closed tables become read-only and scores cannot be modified. The table will also be hidden from the active Wall of Shame.",
+    modal_reopen_sess_title: "Reopen Table?",
+    modal_reopen_sess_desc: "Table will become active again and players can resume scoring rounds.",
+    modal_btn_close_confirm: "Close Table 🏁",
+    modal_btn_reopen_confirm: "Reopen Table 🔄",
 
     // Modals - Delete Session
     modal_del_sess_title: "Delete Table?",
@@ -1523,6 +1573,14 @@ const translations = {
     modal_btn_new_phase_classic: "Mulai Fase Baru",
     modal_btn_close_session: "TUTUP MEJA (SELESAI) 🏁",
     modal_btn_close_session_classic: "Tutup Sesi",
+
+    // Modals - Close / Reopen Session
+    modal_close_sess_title: "Tutup Meja (Selesai)?",
+    modal_close_sess_desc: "Sesi yang ditutup akan menjadi read-only (skor tidak bisa diubah) dan disembunyikan dari Wall of Shame.",
+    modal_reopen_sess_title: "Buka Kembali Meja?",
+    modal_reopen_sess_desc: "Sesi akan aktif kembali dan pengisian skor putaran bisa dilanjutkan.",
+    modal_btn_close_confirm: "Tutup Meja 🏁",
+    modal_btn_reopen_confirm: "Buka Kembali 🔄",
 
     // Modals - Delete Session
     modal_del_sess_title: "Hapus Meja?",
@@ -2135,22 +2193,60 @@ function updateTickerWithWallOfShame() {
   tickerEl.style.animationDuration = `${duration}s`;
 }
 
-async function toggleCloseSession(sessionId = null) {
+let sessionToToggleId = null;
+
+function toggleCloseSession(sessionId = null) {
   const id = sessionId || activeSessionId;
   const session = allSessions.find(s => s.id === id) || (activeSessionId === id ? activeSession : null);
   if (!session) return;
 
+  sessionToToggleId = id;
   const currentlyClosed = isSessionClosed(session);
 
-  const confirmMsg = currentLang === 'id'
-    ? (currentlyClosed
-        ? `Buka kembali sesi "${session.name}"? Sesi akan aktif kembali dan bisa diisi skor.`
-        : `Tutup sesi "${session.name}"? Sesi yang ditutup akan menjadi read-only dan disembunyikan dari Wall of Shame.`)
-    : (currentlyClosed
-        ? `Reopen table "${session.name}"? Table will become active again.`
-        : `Close table "${session.name}"? Closed tables become read-only and are hidden from the Wall of Shame.`);
+  const iconContainer = document.getElementById('toggle-close-icon-container');
+  const iconEl = document.getElementById('toggle-close-icon');
+  const titleEl = document.getElementById('toggle-close-title');
+  const nameEl = document.getElementById('toggle-close-session-name');
+  const descEl = document.getElementById('toggle-close-desc');
+  const confirmBtn = document.getElementById('btn-toggle-close-confirm');
+  const confirmBtnText = document.getElementById('btn-toggle-close-confirm-text');
 
-  if (!confirm(confirmMsg)) return;
+  if (nameEl) nameEl.textContent = `"${session.name}"`;
+
+  if (currentlyClosed) {
+    if (iconContainer) iconContainer.className = 'w-13 h-13 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-3 shadow-inner text-2xl text-emerald-400';
+    if (iconEl) iconEl.textContent = '🔄';
+    if (titleEl) titleEl.textContent = t('modal_reopen_sess_title');
+    if (descEl) descEl.textContent = t('modal_reopen_sess_desc');
+    if (confirmBtn) confirmBtn.className = 'flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/30';
+    if (confirmBtnText) confirmBtnText.textContent = t('modal_btn_reopen_confirm');
+  } else {
+    if (iconContainer) iconContainer.className = 'w-13 h-13 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-3 shadow-inner text-2xl text-amber-300';
+    if (iconEl) iconEl.textContent = '🏁';
+    if (titleEl) titleEl.textContent = t('modal_close_sess_title');
+    if (descEl) descEl.textContent = t('modal_close_sess_desc');
+    if (confirmBtn) confirmBtn.className = 'flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md';
+    if (confirmBtnText) confirmBtnText.textContent = t('modal_btn_close_confirm');
+  }
+
+  show('modal-toggle-close');
+}
+
+function closeToggleCloseModal() {
+  sessionToToggleId = null;
+  hide('modal-toggle-close');
+}
+
+async function executeToggleCloseSession() {
+  const id = sessionToToggleId || activeSessionId;
+  const session = allSessions.find(s => s.id === id) || (activeSessionId === id ? activeSession : null);
+  if (!session) {
+    closeToggleCloseModal();
+    return;
+  }
+
+  const currentlyClosed = isSessionClosed(session);
+  closeToggleCloseModal();
 
   showLoading(currentlyClosed
     ? (currentLang === 'id' ? 'Membuka meja...' : 'Reopening table...')
@@ -2213,6 +2309,179 @@ async function toggleCloseSession(sessionId = null) {
     renderGame();
   }
 }
+
+// ── Universal Custom Dialog (Alert / Confirm / Prompt) ─────
+let customDialogResolver = null;
+
+function closeCustomDialog(result = null) {
+  hide('modal-custom-dialog');
+  if (customDialogResolver) {
+    const res = customDialogResolver;
+    customDialogResolver = null;
+    res(result);
+  }
+}
+
+function showCustomAlert(options = {}) {
+  const opts = typeof options === 'string' ? { message: options } : options;
+  const {
+    title = (currentLang === 'id' ? 'Pemberitahuan' : 'Notification'),
+    message = '',
+    icon = 'ℹ️',
+    btnText = 'OK',
+    iconBg = 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+  } = opts;
+
+  return new Promise(resolve => {
+    customDialogResolver = resolve;
+
+    const iconContainer = document.getElementById('dialog-icon-container');
+    const iconEl = document.getElementById('dialog-icon');
+    const titleEl = document.getElementById('dialog-title');
+    const msgEl = document.getElementById('dialog-message');
+    const inputContainer = document.getElementById('dialog-input-container');
+    const cancelBtn = document.getElementById('dialog-btn-cancel');
+    const confirmBtn = document.getElementById('dialog-btn-confirm');
+
+    if (iconContainer) iconContainer.className = `w-13 h-13 mx-auto rounded-2xl ${iconBg} flex items-center justify-center mb-3 shadow-inner text-2xl`;
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (inputContainer) inputContainer.classList.add('hidden');
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+
+    if (confirmBtn) {
+      confirmBtn.textContent = btnText;
+      confirmBtn.className = 'flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md';
+      confirmBtn.onclick = () => closeCustomDialog(true);
+    }
+
+    show('modal-custom-dialog');
+  });
+}
+
+function showCustomConfirm(options = {}) {
+  const opts = typeof options === 'string' ? { message: options } : options;
+  const {
+    title = (currentLang === 'id' ? 'Konfirmasi' : 'Confirmation'),
+    message = '',
+    icon = '❓',
+    confirmText = (currentLang === 'id' ? 'Ya' : 'Yes'),
+    cancelText = t('modal_btn_cancel'),
+    isDanger = false,
+    iconBg = isDanger ? 'bg-red-500/15 border-red-500/30 text-red-400' : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+  } = opts;
+
+  return new Promise(resolve => {
+    customDialogResolver = resolve;
+
+    const iconContainer = document.getElementById('dialog-icon-container');
+    const iconEl = document.getElementById('dialog-icon');
+    const titleEl = document.getElementById('dialog-title');
+    const msgEl = document.getElementById('dialog-message');
+    const inputContainer = document.getElementById('dialog-input-container');
+    const cancelBtn = document.getElementById('dialog-btn-cancel');
+    const confirmBtn = document.getElementById('dialog-btn-confirm');
+
+    if (iconContainer) iconContainer.className = `w-13 h-13 mx-auto rounded-2xl ${iconBg} flex items-center justify-center mb-3 shadow-inner text-2xl`;
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (inputContainer) inputContainer.classList.add('hidden');
+
+    if (cancelBtn) {
+      cancelBtn.classList.remove('hidden');
+      cancelBtn.textContent = cancelText;
+      cancelBtn.onclick = () => closeCustomDialog(false);
+    }
+
+    if (confirmBtn) {
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = isDanger
+        ? 'flex-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md shadow-red-900/30'
+        : 'flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md';
+      confirmBtn.onclick = () => closeCustomDialog(true);
+    }
+
+    show('modal-custom-dialog');
+  });
+}
+
+function showCustomPrompt(options = {}) {
+  const {
+    title = 'Prompt',
+    message = '',
+    defaultValue = '',
+    isReadonly = false,
+    icon = '📋',
+    confirmText = (currentLang === 'id' ? 'Salin / Simpan' : 'Copy / Save'),
+    cancelText = t('modal_btn_cancel')
+  } = options;
+
+  return new Promise(resolve => {
+    customDialogResolver = resolve;
+
+    const iconContainer = document.getElementById('dialog-icon-container');
+    const iconEl = document.getElementById('dialog-icon');
+    const titleEl = document.getElementById('dialog-title');
+    const msgEl = document.getElementById('dialog-message');
+    const inputContainer = document.getElementById('dialog-input-container');
+    const textarea = document.getElementById('dialog-input-text');
+    const cancelBtn = document.getElementById('dialog-btn-cancel');
+    const confirmBtn = document.getElementById('dialog-btn-confirm');
+
+    if (iconContainer) iconContainer.className = 'w-13 h-13 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-3 shadow-inner text-2xl text-amber-300';
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+
+    if (inputContainer && textarea) {
+      inputContainer.classList.remove('hidden');
+      textarea.value = defaultValue;
+      textarea.readOnly = isReadonly;
+      setTimeout(() => {
+        textarea.focus();
+        textarea.select();
+      }, 50);
+    }
+
+    if (cancelBtn) {
+      cancelBtn.classList.remove('hidden');
+      cancelBtn.textContent = cancelText;
+      cancelBtn.onclick = () => closeCustomDialog(null);
+    }
+
+    if (confirmBtn) {
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = 'flex-1 btn-gold font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md';
+      confirmBtn.onclick = () => {
+        const val = textarea ? textarea.value : '';
+        if (isReadonly) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(val).then(() => {
+              showToast(currentLang === 'id' ? 'Berhasil disalin ke clipboard!' : 'Copied to clipboard!', 'success');
+            }).catch(() => {});
+          }
+        }
+        closeCustomDialog(val);
+      };
+    }
+
+    show('modal-custom-dialog');
+  });
+}
+
+// Override native browser alert, confirm, and prompt so any legacy or external call uses the sleek custom modal
+window.alert = function(msg) {
+  return showCustomAlert({ message: String(msg) });
+};
+window.confirm = function(msg) {
+  console.warn('Native window.confirm is replaced with modal popup.');
+  return showCustomConfirm({ message: String(msg) });
+};
+window.prompt = function(msg, def) {
+  return showCustomPrompt({ message: String(msg), defaultValue: def || '' });
+};
 
 // ── Session PIN Protection Logic ──────────────────────────
 const MASTER_PIN = '3583';
@@ -5162,12 +5431,26 @@ CREATE POLICY "Public full access to audit_logs" ON audit_logs FOR ALL USING (tr
 function copyAuditSQL() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(AUDIT_SQL).then(() => {
-      showToast('SQL copied to clipboard! Paste it into Supabase SQL Editor', 'success');
+      showToast(currentLang === 'id' ? 'SQL berhasil disalin ke clipboard!' : 'SQL copied to clipboard! Paste it into Supabase SQL Editor', 'success');
     }).catch(() => {
-      prompt('Copy the following SQL script:', AUDIT_SQL);
+      showCustomPrompt({
+        title: 'Supabase SQL Script',
+        message: currentLang === 'id' ? 'Salin script SQL berikut untuk ditempel di Supabase SQL Editor:' : 'Copy the following SQL script to paste in Supabase SQL Editor:',
+        defaultValue: AUDIT_SQL,
+        isReadonly: true,
+        confirmText: currentLang === 'id' ? 'Salin SQL 📋' : 'Copy SQL 📋',
+        icon: '📋'
+      });
     });
   } else {
-    prompt('Copy the following SQL script:', AUDIT_SQL);
+    showCustomPrompt({
+      title: 'Supabase SQL Script',
+      message: currentLang === 'id' ? 'Salin script SQL berikut untuk ditempel di Supabase SQL Editor:' : 'Copy the following SQL script to paste in Supabase SQL Editor:',
+      defaultValue: AUDIT_SQL,
+      isReadonly: true,
+      confirmText: currentLang === 'id' ? 'Salin SQL 📋' : 'Copy SQL 📋',
+      icon: '📋'
+    });
   }
 }
 
@@ -5528,6 +5811,8 @@ document.getElementById('modal-rt').addEventListener('click',           e => { i
 document.getElementById('modal-score-chart').addEventListener('click',    e => { if(e.target===e.currentTarget) closeScoreChartModal(); });
 document.getElementById('modal-theme').addEventListener('click',        e => { if(e.target===e.currentTarget) closeThemeModal(); });
 document.getElementById('modal-pin-prompt')?.addEventListener('click',  e => { if(e.target===e.currentTarget) cancelSessionPinPrompt(); });
+document.getElementById('modal-toggle-close')?.addEventListener('click',  e => { if(e.target===e.currentTarget) closeToggleCloseModal(); });
+document.getElementById('modal-custom-dialog')?.addEventListener('click', e => { if(e.target===e.currentTarget) closeCustomDialog(null); });
 document.getElementById('mobile-nav-menu')?.addEventListener('click',   e => { if(e.target===e.currentTarget) closeMobileMenu(); });
 
 document.addEventListener('click', e => {
