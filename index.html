@@ -1706,10 +1706,10 @@ function getMaxRoundPhase(rounds) {
 }
 
 function getScoringPhase(session, rounds) {
-  const maxPhase = getMaxRoundPhase(rounds);
-  const hadRT    = (session.rt_players || []).some(rt => typeof rt.phase === 'number' && (rt.phase === maxPhase || rt.phase === maxPhase + 1));
-  const hasNext  = rounds.some(r => (r.phase ?? 1) > maxPhase);
-  return (hadRT && !hasNext) ? maxPhase + 1 : maxPhase;
+  const maxRoundPhase = (rounds && rounds.length) ? Math.max(...rounds.map(r => r.phase ?? 1)) : 1;
+  const rtPhases      = (session?.rt_players || []).filter(e => typeof e.phase === 'number').map(e => e.phase);
+  const maxRtPhase    = rtPhases.length ? Math.max(...rtPhases) : 1;
+  return Math.max(maxRoundPhase, maxRtPhase);
 }
 
 function getPhaseEvaluation(session, rounds, targetPhase) {
@@ -3859,17 +3859,6 @@ function renderScoreChart(targetPhase) {
 
   let svgContent = '';
 
-  svgContent += `
-    <defs>
-      <filter id="glow-chart" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="2" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>`;
-
   // Grid lines (horizontal)
   const gridSteps = 4;
   for (let i = 0; i <= gridSteps; i++) {
@@ -3923,11 +3912,11 @@ function renderScoreChart(targetPhase) {
 
   const strokeW = isFilterActive ? (playersToDraw.length === 1 ? 3.5 : 2.8) : 2.4;
 
-  // Draw Player Polylines
+  // Draw Player Polylines (crisp SVG lines without GPU filter artifacts)
   playersToDraw.forEach((pi) => {
     const color = CHART_COLORS[pi % CHART_COLORS.length];
     const points = progression.map((step, idx) => `${getX(idx)},${getY(step.totals[pi])}`).join(' ');
-    svgContent += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-chart)" />`;
+    svgContent += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round" />`;
   });
 
   // Draw Dots and Burn flame icons
@@ -4024,17 +4013,12 @@ function renderChartSnapshot(progression, roundIdx) {
           : '';
 
         let cardStyle = '';
-        let badgeHtml = '';
-
         if (!isFilterActive) {
           cardStyle = 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-400/40';
-          badgeHtml = `<span class="text-[8px] px-1 py-0.2 rounded font-black text-slate-300 border border-white/20 bg-white/5">ALL</span>`;
         } else if (isSelected) {
           cardStyle = 'border-amber-400 bg-amber-500/20 shadow-md ring-1 ring-amber-400/60 scale-[1.02]';
-          badgeHtml = `<span class="text-[8px] px-1 py-0.2 rounded font-black bg-amber-400 text-black shadow-sm">✓ ON</span>`;
         } else {
           cardStyle = 'border-white/5 bg-white/[0.02] opacity-35 hover:opacity-85 hover:border-white/20';
-          badgeHtml = `<span class="text-[8px] px-1 py-0.2 rounded font-black text-slate-400 border border-white/10 bg-transparent">+ ADD</span>`;
         }
 
         return `
@@ -4045,7 +4029,6 @@ function renderChartSnapshot(progression, roundIdx) {
               <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: ${color}"></span>
               <span class="text-xs shrink-0">${medals[rIdx]}</span>
               <span class="truncate font-bold text-white text-xs">${esc(p.name)}</span>
-              ${badgeHtml}
             </div>
             <div class="flex items-center gap-1 shrink-0 font-digital font-bold text-xs ${scoreColor(p.total)}">
               <span>${fmtScore(p.total)}</span>
