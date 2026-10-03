@@ -1936,7 +1936,8 @@ function getRTForPhase(session, phase) {
 // ── Session Closure & Wall of Shame Logic ─────────────────
 function isSessionClosed(session) {
   if (!session) return false;
-  if ((session.rt_players || []).some(e => e && e.is_closed === true)) return true;
+  if (session.is_closed === true || session.status === 'closed') return true;
+  if (Array.isArray(session.rt_players) && session.rt_players.some(e => e && (e.is_closed === true || e.is_closed === 'true'))) return true;
   try {
     const closedList = JSON.parse(localStorage.getItem('ceki_closed_sessions') || '[]');
     if (closedList.includes(session.id)) return true;
@@ -1949,11 +1950,15 @@ function getWallOfShameHtml() {
     return `<span class="text-slate-400 font-normal italic">${t('ticker_shame_empty')}</span>`;
   }
 
+  // Filter ONLY currently open sessions for the Hall of Shame ticker
+  const openSessions = allSessions.filter(s => !isSessionClosed(s));
+  if (openSessions.length === 0) {
+    return `<span class="text-slate-400 font-normal italic">${t('ticker_shame_empty')}</span>`;
+  }
+
   const entries = [];
 
-  for (const s of allSessions) {
-    // Closed sessions MUST NOT appear in the running text ticker!
-    if (isSessionClosed(s)) continue;
+  for (const s of openSessions) {
 
     const sRounds = allSessionsRoundsMap[s.id] || [];
     const curPhase = getScoringPhase(s, sRounds);
@@ -2217,9 +2222,11 @@ async function init() {
     
     if (allSessions.length > 0) {
       try {
+        const openSessionIds = allSessions.filter(s => !isSessionClosed(s)).map(s => s.id);
+        const targetIds = openSessionIds.length > 0 ? openSessionIds : allSessions.map(s => s.id);
         const { data: rData } = await db.from('rounds')
           .select('session_id, scores, phase, is_complete')
-          .in('session_id', allSessions.map(s => s.id));
+          .in('session_id', targetIds);
         allSessionsRoundsMap = {};
         (rData || []).forEach(r => {
           if (!allSessionsRoundsMap[r.session_id]) allSessionsRoundsMap[r.session_id] = [];
