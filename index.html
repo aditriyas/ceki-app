@@ -916,7 +916,7 @@
         </h3>
         <p data-i18n="chart_subtitle" class="text-[11px] text-[var(--muted-foreground)]">Posisi & dinamika skor setiap ronde</p>
       </div>
-      <button onclick="closeScoreChartModal()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none px-2 py-1">×</button>
+      <button type="button" onclick="closeScoreChartModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted-foreground)] hover:text-white hover:bg-white/10 active:scale-90 transition-all text-xl font-bold shrink-0 ml-2" aria-label="Close">✕</button>
     </div>
 
     <!-- Phase Selector Tabs inside Chart Modal -->
@@ -927,15 +927,8 @@
       <div id="chart-svg-container" class="w-full h-full flex items-center justify-center"></div>
     </div>
 
-    <!-- Interactive Round Detail Snapshot / Tooltip -->
+    <!-- Interactive Round Detail Snapshot / Standings -->
     <div id="chart-round-snapshot" class="mt-2.5 bg-black/30 border border-amber-500/20 rounded-xl p-2.5 text-xs text-left shrink-0"></div>
-
-    <!-- Player Legends -->
-    <div id="chart-legends" class="grid grid-cols-2 gap-2 mt-2 text-[11px] shrink-0"></div>
-
-    <button onclick="closeScoreChartModal()" class="mt-3 w-full bg-[var(--secondary)] text-[var(--secondary-foreground)] font-bold rounded-xl py-2 text-xs hover:opacity-85 transition-opacity shrink-0">
-      Tutup
-    </button>
   </div>
 </div>
 
@@ -3746,6 +3739,7 @@ async function closeSessionFromRTModal() {
 const CHART_COLORS = ['#f59e0b', '#06b6d4', '#a855f7', '#10b981']; // Gold, Cyan, Purple, Emerald
 let selectedChartPhase = 1;
 let selectedChartRoundIdx = null;
+let selectedPlayerChartFilter = null; // null = all players, 0..3 = isolate specific player
 
 function openScoreChartModal() {
   const session = activeSession;
@@ -3754,12 +3748,22 @@ function openScoreChartModal() {
   const curPhase = getScoringPhase(session, rounds);
   selectedChartPhase = selectedHistoryPhase || curPhase;
   selectedChartRoundIdx = null;
+  selectedPlayerChartFilter = null;
   show('modal-score-chart');
   renderScoreChart();
 }
 
 function closeScoreChartModal() {
   hide('modal-score-chart');
+}
+
+function togglePlayerChartFilter(pi) {
+  if (selectedPlayerChartFilter === pi) {
+    selectedPlayerChartFilter = null;
+  } else {
+    selectedPlayerChartFilter = pi;
+  }
+  renderScoreChart();
 }
 
 function renderScoreChart(targetPhase) {
@@ -3793,6 +3797,7 @@ function renderScoreChart(targetPhase) {
   const targetScore = getTargetScore(session);
   const container = document.getElementById('chart-svg-container');
   const snapshotEl = document.getElementById('chart-round-snapshot');
+  const indicatorEl = document.getElementById('chart-filter-indicator');
   const legendsEl = document.getElementById('chart-legends');
 
   if (progression.length <= 1) {
@@ -3802,6 +3807,7 @@ function renderScoreChart(targetPhase) {
         <p class="font-medium">${currentLang === 'id' ? 'Belum ada putaran selesai di fase ini.' : 'No completed rounds in this phase yet.'}</p>
       </div>`;
     if (snapshotEl) snapshotEl.innerHTML = '';
+    if (indicatorEl) indicatorEl.innerHTML = '';
     if (legendsEl) legendsEl.innerHTML = '';
     return;
   }
@@ -3866,12 +3872,22 @@ function renderScoreChart(targetPhase) {
     svgContent += `<text x="${svgW - padR}" y="${targetY - 5}" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="end">🎯 ${targetScore}</text>`;
   }
 
-  // X Axis markers
+  // X Axis markers with smart spacing to prevent text collision
+  let labelInterval = 1;
+  if (numSteps > 30) labelInterval = 5;
+  else if (numSteps > 18) labelInterval = 3;
+  else if (numSteps > 10) labelInterval = 2;
+
   progression.forEach((step, idx) => {
     const x = getX(idx);
-    const label = idx === 0 ? '0' : `R${idx}`;
-    svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 4}" stroke="rgba(255,255,255,0.2)" stroke-width="1" />`;
-    svgContent += `<text x="${x}" y="${svgH - padB + 14}" fill="rgba(255,255,255,0.5)" font-size="8.5" font-family="sans-serif" text-anchor="middle">${label}</text>`;
+    const isMajor = (idx === 0 || idx === numSteps || idx % labelInterval === 0);
+    if (isMajor) {
+      const label = idx === 0 ? '0' : `R${idx}`;
+      svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 4}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />`;
+      svgContent += `<text x="${x}" y="${svgH - padB + 13}" fill="rgba(255,255,255,0.6)" font-size="8" font-family="monospace" text-anchor="middle">${label}</text>`;
+    } else {
+      svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${svgH - padB + 2}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
+    }
   });
 
   // Selected round vertical indicator
@@ -3881,15 +3897,20 @@ function renderScoreChart(targetPhase) {
   const selX = getX(selectedChartRoundIdx);
   svgContent += `<line x1="${selX}" y1="${padT}" x2="${selX}" y2="${svgH - padB}" stroke="rgba(251,191,36,0.6)" stroke-width="1.5" stroke-dasharray="2,2" />`;
 
+  // Filter which players to draw
+  const playersToDraw = (selectedPlayerChartFilter !== null)
+    ? [selectedPlayerChartFilter]
+    : session.players.map((_, i) => i);
+
   // Draw Player Polylines
-  session.players.forEach((_, pi) => {
+  playersToDraw.forEach((pi) => {
     const color = CHART_COLORS[pi % CHART_COLORS.length];
     const points = progression.map((step, idx) => `${getX(idx)},${getY(step.totals[pi])}`).join(' ');
-    svgContent += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-chart)" />`;
+    svgContent += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="${selectedPlayerChartFilter !== null ? 3.5 : 2.5}" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-chart)" />`;
   });
 
   // Draw Dots and Burn flame icons
-  session.players.forEach((_, pi) => {
+  playersToDraw.forEach((pi) => {
     const color = CHART_COLORS[pi % CHART_COLORS.length];
     progression.forEach((step, idx) => {
       const x = getX(idx);
@@ -3903,7 +3924,7 @@ function renderScoreChart(targetPhase) {
           <text x="${x}" y="${y - 8}" font-size="11" text-anchor="middle">🔥</text>`;
       } else {
         svgContent += `
-          <circle cx="${x}" cy="${y}" r="${isSelected ? 4.5 : 3}" fill="${isSelected ? '#ffffff' : color}" stroke="${color}" stroke-width="${isSelected ? 2 : 1.5}" />`;
+          <circle cx="${x}" cy="${y}" r="${isSelected ? 4.5 : (selectedPlayerChartFilter !== null ? 3.5 : 3)}" fill="${isSelected ? '#ffffff' : color}" stroke="${color}" stroke-width="${isSelected ? 2 : 1.5}" />`;
       }
     });
   });
@@ -3921,21 +3942,6 @@ function renderScoreChart(targetPhase) {
     </svg>`;
 
   renderChartSnapshot(progression, selectedChartRoundIdx);
-
-  // Render Legends
-  const lastStep = progression[progression.length - 1];
-  legendsEl.innerHTML = session.players.map((name, pi) => {
-    const color = CHART_COLORS[pi % CHART_COLORS.length];
-    const currentTot = lastStep.totals[pi];
-    return `
-      <div class="flex items-center justify-between p-1.5 rounded-lg bg-white/5 border border-white/10">
-        <div class="flex items-center gap-1.5 min-w-0">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: ${color}"></span>
-          <span class="truncate font-semibold text-white">${esc(name)}</span>
-        </div>
-        <span class="font-digital font-bold ${scoreColor(currentTot)} shrink-0">${fmtScore(currentTot)}</span>
-      </div>`;
-  }).join('');
 }
 
 function selectChartRound(idx) {
@@ -3952,7 +3958,7 @@ function renderChartSnapshot(progression, roundIdx) {
   const session = activeSession;
   const roundTitle = roundIdx === 0
     ? (currentLang === 'id' ? 'Kondisi Awal (Mulai)' : 'Initial State (Start)')
-    : (currentLang === 'id' ? `Klasemen Setelah Ronde ${roundIdx}` : `Standings After Round ${roundIdx}`);
+    : (currentLang === 'id' ? `Klasemen Akhir Ronde ${roundIdx}` : `Standings After Round ${roundIdx}`);
 
   const ranked = session.players.map((name, pi) => ({
     name,
@@ -3964,26 +3970,46 @@ function renderChartSnapshot(progression, roundIdx) {
 
   const medals = ['👑', '🥈', '🥉', '4️⃣'];
 
+  // Top header of snapshot
+  const filterResetBtn = (selectedPlayerChartFilter !== null)
+    ? `<button onclick="togglePlayerChartFilter(${selectedPlayerChartFilter})" class="text-[10.5px] text-amber-300 hover:text-white font-bold underline flex items-center gap-1 transition-colors">
+         <span>${currentLang === 'id' ? 'Tampilkan Semua' : 'Show All'}</span> <span>↺</span>
+       </button>`
+    : `<span class="text-[10px] text-slate-400 italic">${currentLang === 'id' ? 'Ketuk pemain untuk fokus grafik' : 'Tap player to isolate line'}</span>`;
+
   snapshotEl.innerHTML = `
-    <div class="flex items-center justify-between border-b border-amber-500/20 pb-1.5 mb-1.5">
-      <span class="font-bold text-amber-300 flex items-center gap-1.5">
+    <div class="flex items-center justify-between border-b border-amber-500/20 pb-1.5 mb-2">
+      <span class="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
         <span>📍</span> <span>${roundTitle}</span>
       </span>
-      <span class="text-[10px] text-slate-400">${currentLang === 'id' ? 'Klik titik ronde pada grafik' : 'Tap dots on chart to switch'}</span>
+      ${filterResetBtn}
     </div>
-    <div class="grid grid-cols-2 gap-1.5">
+    <div class="grid grid-cols-2 gap-2">
       ${ranked.map((p, rIdx) => {
+        const color = CHART_COLORS[p.pi % CHART_COLORS.length];
+        const isFiltered = (selectedPlayerChartFilter === p.pi);
+        const isDimmed = (selectedPlayerChartFilter !== null && !isFiltered);
+
         const deltaText = roundIdx > 0
           ? `<span class="text-[10px] opacity-75">(${fmtScore(p.delta)})</span>`
           : '';
         const burnedText = p.isBurned
           ? `<span class="text-[10px] text-amber-300 font-bold">🔥 Kebakar</span>`
           : '';
+
+        const cardStyle = isFiltered
+          ? 'border-amber-400 bg-amber-500/20 shadow-md ring-1 ring-amber-400/60 scale-[1.02]'
+          : (isDimmed ? 'border-white/5 bg-white/[0.02] opacity-35 hover:opacity-85' : 'border-white/10 bg-white/5 hover:bg-white/10');
+
         return `
-          <div class="flex items-center justify-between px-2 py-1 rounded bg-black/40 border border-white/5">
-            <div class="flex items-center gap-1 min-w-0">
+          <div onclick="togglePlayerChartFilter(${p.pi})"
+            title="${isFiltered ? (currentLang === 'id' ? 'Klik untuk tampilkan semua pemain' : 'Click to show all players') : (currentLang === 'id' ? 'Klik untuk tampilkan garis pemain ini saja' : 'Click to isolate this player graph')}"
+            class="flex items-center justify-between px-2.5 py-2 rounded-xl border transition-all cursor-pointer select-none active:scale-95 ${cardStyle}">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: ${color}"></span>
               <span class="text-xs shrink-0">${medals[rIdx]}</span>
-              <span class="truncate font-semibold text-white">${esc(p.name)}</span>
+              <span class="truncate font-bold text-white text-xs">${esc(p.name)}</span>
+              ${isFiltered ? `<span class="text-[8px] px-1 py-0.2 rounded bg-amber-400 text-black font-black">ONLY</span>` : ''}
             </div>
             <div class="flex items-center gap-1 shrink-0 font-digital font-bold text-xs ${scoreColor(p.total)}">
               <span>${fmtScore(p.total)}</span>
