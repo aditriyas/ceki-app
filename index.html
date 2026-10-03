@@ -1029,6 +1029,8 @@ const translations = {
     badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
     badge_calon_rt_classic: "Calon RT",
+    badge_burned: "BURNED 🔥",
+    badge_burned_classic: "Burned 🔥",
     badge_closed: "CLOSED",
     badge_closed_classic: "Closed",
     session_btn_close: "Close Table",
@@ -1128,7 +1130,8 @@ const translations = {
     toast_session_closed: 'Table "{name}" is now closed.',
     toast_session_reopened: 'Table "{name}" reopened.',
     toast_lang_changed: "Language: English",
-    toast_theme_changed: "Theme: {name}"
+    toast_theme_changed: "Theme: {name}",
+    toast_burned: "🔥 {name} BURNED! Score reset to 0!"
   },
   id: {
     app_title: "ESBE188 VIP - Tracker Skor Ceki",
@@ -1236,6 +1239,8 @@ const translations = {
     badge_pak_rt_shuffle_classic: "RT",
     badge_calon_rt: "CALON RT ⚠️",
     badge_calon_rt_classic: "Calon RT",
+    badge_burned: "KEBAKAR 🔥",
+    badge_burned_classic: "Kebakar 🔥",
     badge_closed: "SELESAI",
     badge_closed_classic: "Selesai",
     session_btn_close: "Tutup Meja",
@@ -1335,7 +1340,8 @@ const translations = {
     toast_session_closed: 'Meja "{name}" telah ditutup.',
     toast_session_reopened: 'Meja "{name}" dibuka kembali.',
     toast_lang_changed: "Bahasa: Indonesia",
-    toast_theme_changed: "Tema: {name}"
+    toast_theme_changed: "Tema: {name}",
+    toast_burned: "🔥 {name} KEBAKAR! Skor kembali ke 0!"
   }
 };
 
@@ -1595,12 +1601,71 @@ function getScoringPhase(session, rounds) {
   return (hadRT && !hasNext) ? maxPhase + 1 : maxPhase;
 }
 
-function calcTotals(session, rounds) {
-  const phase = getScoringPhase(session, rounds);
-  return session.players.map((_, pi) =>
-    rounds.filter(r => (r.phase ?? 1) === phase)
-          .reduce((sum, r) => sum + (r.scores?.[pi] ?? 0), 0)
-  );
+function getPhaseEvaluation(session, rounds, targetPhase) {
+  if (!session || !session.players) return { totals: [], roundBurnedMap: {} };
+  const phase = targetPhase ?? getScoringPhase(session, rounds);
+  const phaseRounds = (rounds || [])
+    .filter(r => (r.phase ?? 1) === phase)
+    .slice()
+    .sort((a, b) => {
+      const rnA = a.round_number ?? 0;
+      const rnB = b.round_number ?? 0;
+      if (rnA !== rnB) return rnA - rnB;
+      const tA = new Date(a.created_at || 0).getTime();
+      const tB = new Date(b.created_at || 0).getTime();
+      return tA - tB;
+    });
+
+  let runningTotals = session.players.map(() => 0);
+  const roundBurnedMap = {};
+
+  for (const r of phaseRounds) {
+    const scores = r.scores || {};
+    const prevTotals = [...runningTotals];
+    const hasScore = session.players.map((_, pi) => scores[pi] != null);
+    const tentativeTotals = session.players.map((_, pi) => {
+      return (scores[pi] != null) ? prevTotals[pi] + scores[pi] : prevTotals[pi];
+    });
+
+    const burnedSet = new Set();
+
+    for (let p = 0; p < session.players.length; p++) {
+      if (!hasScore[p]) continue;
+      const wasOver100 = (prevTotals[p] > 100 || tentativeTotals[p] > 100);
+      if (!wasOver100) continue;
+
+      for (let q = 0; q < session.players.length; q++) {
+        if (p === q || !hasScore[q]) continue;
+        // q must have come from behind before this round (or tied while already > 100)
+        const qWasBehind = (prevTotals[p] > prevTotals[q]) || (prevTotals[p] === prevTotals[q] && prevTotals[p] > 100);
+        const qPassedP = (tentativeTotals[q] > tentativeTotals[p]);
+
+        if (qWasBehind && qPassedP) {
+          burnedSet.add(p);
+          break;
+        }
+      }
+    }
+
+    if (r.id) {
+      roundBurnedMap[r.id] = Array.from(burnedSet);
+    }
+
+    for (let p = 0; p < session.players.length; p++) {
+      if (burnedSet.has(p)) {
+        runningTotals[p] = 0;
+      } else {
+        runningTotals[p] = tentativeTotals[p];
+      }
+    }
+  }
+
+  return { totals: runningTotals, roundBurnedMap };
+}
+
+function calcTotals(session, rounds, targetPhase) {
+  const { totals } = getPhaseEvaluation(session, rounds, targetPhase);
+  return totals;
 }
 
 // ── Target Score Helpers ──────────────────────────────────
@@ -2436,11 +2501,16 @@ function renderGame() {
   const session  = activeSession;
   const rounds   = activeRounds;
   const phase    = getScoringPhase(session, rounds);
-  const totals   = calcTotals(session, rounds);
+  const phaseEval = getPhaseEvaluation(session, rounds, phase);
+  const totals   = phaseEval.totals;
   const rtIdx    = getCurrentRTIndex(session);        // sticky RT from last phase end
   const calonIdx = getCalonRTIndex(session, rounds);  // current last-place
   const isCasino = (currentTheme === 'casino');
   const isClosed = isSessionClosed(session);
+
+  const pendingRound = isClosed ? null : rounds.find(r => !r.is_complete && (r.phase ?? 1) === phase);
+  const latestRound  = pendingRound || rounds.filter(r => r.is_complete && (r.phase ?? 1) === phase).slice(-1)[0];
+  const latestBurned = (latestRound && phaseEval.roundBurnedMap[latestRound.id]) || [];
 
   const targetScore = getTargetScore(session);
 
@@ -2489,6 +2559,7 @@ function renderGame() {
     const isFirst = hasScoreDiff && p.total === maxTotal;
     const isRT    = p.idx === rtIdx;
     const isCalon = hasScoreDiff && p.total === minTotal;
+    const isBurned = latestBurned.includes(p.idx);
     const medalIcon = hasScoreDiff ? (isCasino ? (p.total === maxTotal ? '👑' : medals[rank]) : (['🥇','🥈','🥉',''][rank] || '')) : (isCasino ? '•' : ' ');
     return `
       <div class="flex items-center gap-3 py-1.5 ${rank < 3 ? 'border-l-2 pl-3 rank-'+(rank+1) : 'pl-5'}">
@@ -2498,13 +2569,13 @@ function renderGame() {
           ${isFirst ? `<span class="odoo-tag tag-winning">${t('badge_sultan_gacor')}</span>`  : ''}
           ${isRT    ? `<span class="odoo-tag tag-rt">${t('badge_pak_rt_shuffle')}</span>`       : ''}
           ${isCalon ? `<span class="odoo-tag tag-calon">${t('badge_calon_rt')}</span>`         : ''}
+          ${isBurned ? `<span class="odoo-tag tag-rt">🔥 ${t('badge_burned')}</span>`           : ''}
         </div>
         <p class="font-bold font-digital text-base ${scoreColor(p.total)} shrink-0">${fmtScore(p.total)}</p>
       </div>`;
   }).join('');
 
   // Pending round (hidden if session is closed)
-  const pendingRound = isClosed ? null : rounds.find(r => !r.is_complete && (r.phase ?? 1) === phase);
   if (pendingRound) {
     const submitted = session.players.filter((_, i) => pendingRound.scores?.[i] != null);
     const waiting   = session.players.filter((_, i) => pendingRound.scores?.[i] == null);
@@ -2536,6 +2607,7 @@ function renderGame() {
     const isRT      = i === rtIdx;
     const isCalon   = hasScoreDiff && totals[i] === minTotal;
     const isFirst   = hasScoreDiff && totals[i] === maxTotal;
+    const isBurned  = latestBurned.includes(i);
     const bgGrad    = isCasino ? `bg-gradient-to-b ${colors[i]} to-transparent` : '';
     const borderGlow = (isFirst && isCasino) ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : '';
     const clickHandler = isClosed ? '' : (submitted ? '' : `openModal(${i})`);
@@ -2550,11 +2622,12 @@ function renderGame() {
             ${esc(name.charAt(0).toUpperCase())}
           </div>
           <p class="font-semibold text-sm truncate">${esc(name)}</p>
-          ${(isFirst || isRT || isCalon) ? `
+          ${(isFirst || isRT || isCalon || isBurned) ? `
           <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
             ${isFirst ? `<span class="odoo-tag tag-winning">${t('badge_gacor')}</span>` : ''}
             ${isRT    ? `<span class="odoo-tag tag-rt">${t('badge_pak_rt')}</span>` : ''}
             ${isCalon ? `<span class="odoo-tag tag-calon">${t('badge_calon_rt')}</span>` : ''}
+            ${isBurned ? `<span class="odoo-tag tag-rt animate-pulse">🔥 ${t('badge_burned')}</span>` : ''}
           </div>` : ''}
         </div>
         <div>
@@ -2624,6 +2697,7 @@ function renderHistory(session, rounds) {
 
   const phaseRounds   = done.filter(r => (r.phase ?? 1) === selectedHistoryPhase);
   const rtIdxForPhase = getRTForPhase(session, selectedHistoryPhase);
+  const { roundBurnedMap } = getPhaseEvaluation(session, rounds, selectedHistoryPhase);
 
   // Info banner (RT of this phase)
   const rtName = (rtIdxForPhase !== null && session.players[rtIdxForPhase])
@@ -2656,22 +2730,26 @@ function renderHistory(session, rounds) {
 
   const isClosed = isSessionClosed(session);
 
-  body.innerHTML = phaseRounds.map((r, idx) => `
+  body.innerHTML = phaseRounds.map((r, idx) => {
+    const burnedInRound = roundBurnedMap[r.id] || [];
+    return `
     <tr class="border-t border-[var(--border)] hover:bg-[var(--secondary)]/20 transition-colors">
       <td class="px-3 py-2.5 text-[var(--muted-foreground)] font-medium text-xs">${idx + 1}</td>
       ${session.players.map((_, pi) => {
         const s = r.scores?.[pi] ?? 0;
+        const isBurned = burnedInRound.includes(pi);
+        const burnedBadge = isBurned ? ' <span title="Kebakar! Skor reset ke 0" class="inline-block animate-pulse">🔥</span>' : '';
         if (isClosed) {
           return `
             <td class="px-2 py-2 font-semibold text-center ${scoreColor(s)} cursor-default">
-              <span class="inline-block px-1 py-0.5 font-digital">${fmtScore(s)}</span>
+              <span class="inline-flex items-center justify-center gap-1 font-digital ${isBurned ? 'text-amber-300 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30' : 'px-1 py-0.5'}">${fmtScore(s)}${burnedBadge}</span>
             </td>`;
         }
         return `
           <td onclick="openEditScoreModal('${r.id}', ${idx + 1}, ${pi}, ${s})"
-            title="Click to edit score"
+            title="${isBurned ? 'Kebakar! Skor reset ke 0. Click to edit score' : 'Click to edit score'}"
             class="px-2 py-2 font-semibold text-center ${scoreColor(s)} cursor-pointer hover:bg-[var(--primary)]/15 rounded-lg transition-all active:scale-95">
-            <span class="inline-block px-1 py-0.5 rounded border border-transparent hover:border-[var(--primary)]/30 font-digital">${fmtScore(s)}</span>
+            <span class="inline-flex items-center justify-center gap-1 font-digital ${isBurned ? 'text-amber-300 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 shadow-sm shadow-amber-500/20' : 'px-1 py-0.5 rounded border border-transparent hover:border-[var(--primary)]/30'}">${fmtScore(s)}${burnedBadge}</span>
           </td>`;
       }).join('')}
       <td class="px-1 py-2 text-center">
@@ -2683,7 +2761,7 @@ function renderHistory(session, rounds) {
         </button>`}
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function toggleHistory() {
@@ -2786,9 +2864,16 @@ async function saveEditedScore() {
       }
     });
 
-    // Check if updated score triggers target score RT condition
+    // Check if anyone burned in this round or if updated score triggers RT condition
+    const postEditEval = getPhaseEvaluation(activeSession, activeRounds);
+    const burnedIdxs = (targetId && postEditEval.roundBurnedMap[targetId]) || [];
+    if (burnedIdxs.length > 0) {
+      const burnedNames = burnedIdxs.map(idx => activeSession.players[idx]).join(' & ');
+      showToast(t('toast_burned', { name: burnedNames }), 'error');
+    }
+
     const targetScore = getTargetScore(activeSession);
-    const newTotals = calcTotals(activeSession, activeRounds);
+    const newTotals = postEditEval.totals;
     rtTriggerPlayers = activeSession.players
       .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
       .filter(p => p.total >= targetScore);
@@ -2946,9 +3031,18 @@ async function submitScore() {
       }
     });
 
+    // Check if anyone burned in this round
+    const targetRoundId = pendingRound ? pendingRound.id : (activeRounds[activeRounds.length - 1]?.id);
+    const postEval = getPhaseEvaluation(activeSession, activeRounds, scoringPhase);
+    const burnedIdxs = (targetRoundId && postEval.roundBurnedMap[targetRoundId]) || [];
+    if (burnedIdxs.length > 0) {
+      const burnedNames = burnedIdxs.map(idx => activeSession.players[idx]).join(' & ');
+      showToast(t('toast_burned', { name: burnedNames }), 'error');
+    }
+
     // Check RT (>= targetScore) condition
     const targetScore = getTargetScore(activeSession);
-    const newTotals = calcTotals(activeSession, activeRounds);
+    const newTotals = postEval.totals;
     rtTriggerPlayers = activeSession.players
       .map((name, i) => ({ name, idx: i, total: newTotals[i] }))
       .filter(p => p.total >= targetScore);
