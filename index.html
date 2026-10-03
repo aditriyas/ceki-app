@@ -677,7 +677,13 @@
 
   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm mb-6">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-      <p data-i18n="game_history_title" class="text-xs font-bold text-amber-400 uppercase tracking-wider font-casino">📋 ROUND HISTORY</p>
+      <div class="flex items-center gap-2">
+        <p data-i18n="game_history_title" class="text-xs font-bold text-amber-400 uppercase tracking-wider font-casino">📋 ROUND HISTORY</p>
+        <button onclick="openScoreChartModal()" class="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 rounded-lg px-2 py-0.5 transition-all shadow-sm active:scale-95">
+          <span>📈</span>
+          <span data-i18n="game_btn_chart">Trend</span>
+        </button>
+      </div>
       <button onclick="toggleHistory()" id="btn-toggle-history" class="text-xs text-[var(--primary)] hover:opacity-80 font-bold">Show</button>
     </div>
     <div id="history-section" class="hidden">
@@ -898,6 +904,41 @@
   </div>
 </div>
 
+<!-- Score Progression Trend Chart Modal (Option 4) -->
+<div id="modal-score-chart" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay bg-black/80 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-amber-500/40 rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl anim-in text-center relative overflow-hidden flex flex-col max-h-[92vh]">
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between mb-2.5 border-b border-[var(--border)] pb-2.5 shrink-0">
+      <div class="text-left">
+        <h3 class="text-base font-black font-casino gold-text flex items-center gap-1.5">
+          <span>📈</span> <span data-i18n="chart_title">SCORE TREND & STANDINGS</span>
+        </h3>
+        <p data-i18n="chart_subtitle" class="text-[11px] text-[var(--muted-foreground)]">Posisi & dinamika skor setiap ronde</p>
+      </div>
+      <button onclick="closeScoreChartModal()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none px-2 py-1">×</button>
+    </div>
+
+    <!-- Phase Selector Tabs inside Chart Modal -->
+    <div id="chart-phase-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1.5 shrink-0"></div>
+
+    <!-- SVG Chart Container -->
+    <div class="relative bg-black/40 border border-[var(--border)]/60 rounded-2xl p-2 overflow-hidden flex-1 min-h-[220px] flex flex-col justify-center">
+      <div id="chart-svg-container" class="w-full h-full flex items-center justify-center"></div>
+    </div>
+
+    <!-- Interactive Round Detail Snapshot / Tooltip -->
+    <div id="chart-round-snapshot" class="mt-2.5 bg-black/30 border border-amber-500/20 rounded-xl p-2.5 text-xs text-left shrink-0"></div>
+
+    <!-- Player Legends -->
+    <div id="chart-legends" class="grid grid-cols-2 gap-2 mt-2 text-[11px] shrink-0"></div>
+
+    <button onclick="closeScoreChartModal()" class="mt-3 w-full bg-[var(--secondary)] text-[var(--secondary-foreground)] font-bold rounded-xl py-2 text-xs hover:opacity-85 transition-opacity shrink-0">
+      Tutup
+    </button>
+  </div>
+</div>
+
 <!-- Zeus Lightning FX Overlays -->
 <div id="zeus-flash" class="hidden pointer-events-none fixed inset-0 z-[55] bg-gradient-to-b from-cyan-100/50 via-amber-200/40 to-white/70 mix-blend-screen transition-opacity"></div>
 <canvas id="zeus-canvas" class="hidden pointer-events-none fixed inset-0 z-[60] w-full h-full"></canvas>
@@ -1085,6 +1126,9 @@ const translations = {
     game_history_title_classic: "Round History",
     game_btn_show: "Show",
     game_btn_hide: "Hide",
+    game_btn_chart: "Trend",
+    chart_title: "SCORE TREND & STANDINGS",
+    chart_subtitle: "Standings and point dynamics per round",
     game_phase_active: "Active",
     game_phase_info: "Phase {phase} · {rounds} rounds played",
     game_pak_rt_label: "Pak RT: {name}",
@@ -1297,6 +1341,9 @@ const translations = {
     game_history_title_classic: "Riwayat Putaran",
     game_btn_show: "Buka",
     game_btn_hide: "Tutup",
+    game_btn_chart: "Grafik",
+    chart_title: "TREN PERJALANAN SKOR",
+    chart_subtitle: "Posisi klasemen dan dinamika skor per ronde",
     game_phase_active: "Aktif",
     game_phase_info: "Fase {phase} · {rounds} putaran selesai",
     game_pak_rt_label: "Pak RT: {name}",
@@ -1743,6 +1790,81 @@ function getPhaseEvaluation(session, rounds, targetPhase) {
 function calcTotals(session, rounds, targetPhase) {
   const { totals } = getPhaseEvaluation(session, rounds, targetPhase);
   return totals;
+}
+
+function getPhaseProgression(session, rounds, targetPhase) {
+  if (!session || !session.players) return [];
+  const phase = targetPhase ?? getScoringPhase(session, rounds);
+  const phaseRounds = (rounds || [])
+    .filter(r => (r.phase ?? 1) === phase && r.is_complete)
+    .slice()
+    .sort((a, b) => {
+      const rnA = a.round_number ?? 0;
+      const rnB = b.round_number ?? 0;
+      if (rnA !== rnB) return rnA - rnB;
+      const tA = new Date(a.created_at || 0).getTime();
+      const tB = new Date(b.created_at || 0).getTime();
+      return tA - tB;
+    });
+
+  let runningTotals = session.players.map(() => 0);
+  const progression = [
+    {
+      roundNum: 0,
+      totals: [...runningTotals],
+      deltas: session.players.map(() => 0),
+      burned: []
+    }
+  ];
+
+  for (let idx = 0; idx < phaseRounds.length; idx++) {
+    const r = phaseRounds[idx];
+    const scores = r.scores || {};
+    const prevTotals = [...runningTotals];
+    const hasScore = session.players.map((_, pi) => scores[pi] != null);
+    const tentativeTotals = session.players.map((_, pi) => {
+      return (scores[pi] != null) ? prevTotals[pi] + scores[pi] : prevTotals[pi];
+    });
+
+    const burnedSet = new Set();
+    for (let p = 0; p < session.players.length; p++) {
+      if (!hasScore[p]) continue;
+      const wasOver100 = (prevTotals[p] > 100 || tentativeTotals[p] > 100);
+      if (!wasOver100) continue;
+
+      for (let q = 0; q < session.players.length; q++) {
+        if (p === q || !hasScore[q]) continue;
+        const qWasBehind = (prevTotals[p] > prevTotals[q]) || (prevTotals[p] === prevTotals[q] && prevTotals[p] > 100);
+        const qPassedP = (tentativeTotals[q] > tentativeTotals[p]);
+
+        if (qWasBehind && qPassedP) {
+          burnedSet.add(p);
+          break;
+        }
+      }
+    }
+
+    const burnedList = Array.from(burnedSet);
+    const deltas = session.players.map((_, pi) => scores[pi] ?? 0);
+
+    for (let p = 0; p < session.players.length; p++) {
+      if (burnedSet.has(p)) {
+        runningTotals[p] = 0;
+      } else {
+        runningTotals[p] = tentativeTotals[p];
+      }
+    }
+
+    progression.push({
+      roundNum: idx + 1,
+      roundId: r.id,
+      totals: [...runningTotals],
+      deltas,
+      burned: burnedList
+    });
+  }
+
+  return progression;
 }
 
 // ── Target Score Helpers ──────────────────────────────────
@@ -3539,6 +3661,46 @@ function triggerZeusLightning() {
   zeusAnimFrame = requestAnimationFrame(renderZeusFrame);
 }
 
+let zeusLoopTimeout = null;
+
+function startZeusLightningLoop() {
+  stopZeusLightningLoop();
+  function runWave() {
+    const modal = document.getElementById('modal-rt');
+    if (!modal || modal.classList.contains('hidden')) {
+      stopZeusLightningLoop();
+      return;
+    }
+    triggerZeusLightning();
+    zeusLoopTimeout = setTimeout(runWave, 2900 + Math.random() * 400);
+  }
+  runWave();
+}
+
+function stopZeusLightningLoop() {
+  if (zeusLoopTimeout) {
+    clearTimeout(zeusLoopTimeout);
+    zeusLoopTimeout = null;
+  }
+  if (zeusAnimFrame) {
+    cancelAnimationFrame(zeusAnimFrame);
+    zeusAnimFrame = null;
+  }
+  const canvas = document.getElementById('zeus-canvas');
+  if (canvas) {
+    canvas.classList.add('hidden');
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  const flash = document.getElementById('zeus-flash');
+  if (flash) {
+    flash.classList.add('hidden');
+    flash.classList.remove('zeus-flash-active');
+  }
+  const modalCard = document.querySelector('#modal-rt > div');
+  if (modalCard) modalCard.classList.remove('zeus-electric-border', 'zeus-shake');
+}
+
 // ── RT Modal ──────────────────────────────────────────────
 function showRTModal() {
   const targetScore = getTargetScore(activeSession);
@@ -3571,31 +3733,271 @@ function showRTModal() {
   show('modal-rt');
   renderGame();
   setTimeout(() => {
-    triggerZeusLightning();
+    startZeusLightningLoop();
   }, 100);
 }
 
 function dismissRTModal() {
   hide('modal-rt');
   rtTriggerPlayers = [];
-  const canvas = document.getElementById('zeus-canvas');
-  if (canvas) {
-    canvas.classList.add('hidden');
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  const flash = document.getElementById('zeus-flash');
-  if (flash) {
-    flash.classList.add('hidden');
-    flash.classList.remove('zeus-flash-active');
-  }
-  const modalCard = document.querySelector('#modal-rt > div');
-  if (modalCard) modalCard.classList.remove('zeus-electric-border', 'zeus-shake');
+  stopZeusLightningLoop();
 }
 
 async function closeSessionFromRTModal() {
   dismissRTModal();
   await toggleCloseSession(activeSessionId);
+}
+
+// ── Score Trend Line Chart (Option 4) ─────────────────────
+const CHART_COLORS = ['#f59e0b', '#06b6d4', '#a855f7', '#10b981']; // Gold, Cyan, Purple, Emerald
+let selectedChartPhase = 1;
+let selectedChartRoundIdx = null;
+
+function openScoreChartModal() {
+  const session = activeSession;
+  const rounds = activeRounds;
+  if (!session) return;
+  const curPhase = getScoringPhase(session, rounds);
+  selectedChartPhase = selectedHistoryPhase || curPhase;
+  selectedChartRoundIdx = null;
+  show('modal-score-chart');
+  renderScoreChart();
+}
+
+function closeScoreChartModal() {
+  hide('modal-score-chart');
+}
+
+function renderScoreChart(targetPhase) {
+  const session = activeSession;
+  const rounds = activeRounds;
+  if (!session) return;
+
+  if (targetPhase) selectedChartPhase = targetPhase;
+  const phase = selectedChartPhase;
+
+  // Render Phase Tabs inside chart modal
+  const done = (rounds || []).filter(r => r.is_complete);
+  const curPhase = getScoringPhase(session, rounds);
+  const phaseSet = new Set(done.map(r => r.phase ?? 1));
+  phaseSet.add(curPhase);
+  (session.rt_players || []).forEach(rt => { if (rt.phase) phaseSet.add(rt.phase); });
+  const phases = Array.from(phaseSet).map(Number).sort((a,b) => a - b);
+
+  const tabsEl = document.getElementById('chart-phase-tabs');
+  if (tabsEl) {
+    tabsEl.innerHTML = phases.map(p => `
+      <button onclick="renderScoreChart(${p})"
+        class="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all shrink-0
+          ${p === phase ? 'bg-[var(--primary)] text-white shadow-sm' : 'bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}">
+        ${currentLang === 'id' ? 'Fase' : 'Phase'} ${p}
+      </button>
+    `).join('');
+  }
+
+  const progression = getPhaseProgression(session, rounds, phase);
+  const targetScore = getTargetScore(session);
+  const container = document.getElementById('chart-svg-container');
+  const snapshotEl = document.getElementById('chart-round-snapshot');
+  const legendsEl = document.getElementById('chart-legends');
+
+  if (progression.length <= 1) {
+    container.innerHTML = `
+      <div class="text-center py-10 text-xs text-[var(--muted-foreground)]">
+        <p class="text-3xl mb-2">📉</p>
+        <p class="font-medium">${currentLang === 'id' ? 'Belum ada putaran selesai di fase ini.' : 'No completed rounds in this phase yet.'}</p>
+      </div>`;
+    if (snapshotEl) snapshotEl.innerHTML = '';
+    if (legendsEl) legendsEl.innerHTML = '';
+    return;
+  }
+
+  // Calculate bounds
+  let allValues = [0, targetScore];
+  progression.forEach(step => {
+    step.totals.forEach(t => allValues.push(t));
+  });
+  let minVal = Math.min(...allValues);
+  let maxVal = Math.max(...allValues);
+  const valRange = maxVal - minVal || 100;
+  minVal = Math.floor(minVal - valRange * 0.05);
+  maxVal = Math.ceil(maxVal + valRange * 0.08);
+
+  const svgW = 380;
+  const svgH = 220;
+  const padL = 42;
+  const padR = 24;
+  const padT = 24;
+  const padB = 28;
+  const plotW = svgW - padL - padR;
+  const plotH = svgH - padT - padB;
+
+  const numSteps = progression.length - 1;
+  const getX = (idx) => padL + (idx / numSteps) * plotW;
+  const getY = (val) => padT + ((maxVal - val) / (maxVal - minVal)) * plotH;
+
+  const targetY = getY(targetScore);
+  const zeroY = getY(0);
+
+  let svgContent = '';
+
+  svgContent += `
+    <defs>
+      <filter id="glow-chart" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>`;
+
+  // Grid lines (horizontal)
+  const gridSteps = 4;
+  for (let i = 0; i <= gridSteps; i++) {
+    const val = Math.round(minVal + (i / gridSteps) * (maxVal - minVal));
+    const y = getY(val);
+    svgContent += `<line x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}" stroke="rgba(255,255,255,0.07)" stroke-width="1" />`;
+    svgContent += `<text x="${padL - 6}" y="${y + 3}" fill="rgba(255,255,255,0.45)" font-size="8.5" font-family="monospace" text-anchor="end">${val}</text>`;
+  }
+
+  // Zero line highlight
+  if (zeroY >= padT && zeroY <= svgH - padB) {
+    svgContent += `<line x1="${padL}" y1="${zeroY}" x2="${svgW - padR}" y2="${zeroY}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3,3" />`;
+  }
+
+  // Target Score line highlight
+  if (targetY >= padT && targetY <= svgH - padB) {
+    svgContent += `<line x1="${padL}" y1="${targetY}" x2="${svgW - padR}" y2="${targetY}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3" />`;
+    svgContent += `<text x="${svgW - padR}" y="${targetY - 5}" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="end">🎯 ${targetScore}</text>`;
+  }
+
+  // X Axis markers
+  progression.forEach((step, idx) => {
+    const x = getX(idx);
+    const label = idx === 0 ? '0' : `R${idx}`;
+    svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 4}" stroke="rgba(255,255,255,0.2)" stroke-width="1" />`;
+    svgContent += `<text x="${x}" y="${svgH - padB + 14}" fill="rgba(255,255,255,0.5)" font-size="8.5" font-family="sans-serif" text-anchor="middle">${label}</text>`;
+  });
+
+  // Selected round vertical indicator
+  if (selectedChartRoundIdx == null || selectedChartRoundIdx >= progression.length) {
+    selectedChartRoundIdx = progression.length - 1;
+  }
+  const selX = getX(selectedChartRoundIdx);
+  svgContent += `<line x1="${selX}" y1="${padT}" x2="${selX}" y2="${svgH - padB}" stroke="rgba(251,191,36,0.6)" stroke-width="1.5" stroke-dasharray="2,2" />`;
+
+  // Draw Player Polylines
+  session.players.forEach((_, pi) => {
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    const points = progression.map((step, idx) => `${getX(idx)},${getY(step.totals[pi])}`).join(' ');
+    svgContent += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-chart)" />`;
+  });
+
+  // Draw Dots and Burn flame icons
+  session.players.forEach((_, pi) => {
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    progression.forEach((step, idx) => {
+      const x = getX(idx);
+      const y = getY(step.totals[pi]);
+      const isBurned = step.burned.includes(pi);
+      const isSelected = (idx === selectedChartRoundIdx);
+
+      if (isBurned) {
+        svgContent += `
+          <circle cx="${x}" cy="${y}" r="6" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+          <text x="${x}" y="${y - 8}" font-size="11" text-anchor="middle">🔥</text>`;
+      } else {
+        svgContent += `
+          <circle cx="${x}" cy="${y}" r="${isSelected ? 4.5 : 3}" fill="${isSelected ? '#ffffff' : color}" stroke="${color}" stroke-width="${isSelected ? 2 : 1.5}" />`;
+      }
+    });
+  });
+
+  // Interactive touch column overlays
+  progression.forEach((_, idx) => {
+    const x = getX(idx);
+    const colW = Math.max(16, plotW / numSteps);
+    svgContent += `<rect x="${x - colW/2}" y="${padT}" width="${colW}" height="${plotH}" fill="transparent" class="cursor-pointer" onclick="selectChartRound(${idx})" />`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-auto select-none overflow-visible">
+      ${svgContent}
+    </svg>`;
+
+  renderChartSnapshot(progression, selectedChartRoundIdx);
+
+  // Render Legends
+  const lastStep = progression[progression.length - 1];
+  legendsEl.innerHTML = session.players.map((name, pi) => {
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    const currentTot = lastStep.totals[pi];
+    return `
+      <div class="flex items-center justify-between p-1.5 rounded-lg bg-white/5 border border-white/10">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: ${color}"></span>
+          <span class="truncate font-semibold text-white">${esc(name)}</span>
+        </div>
+        <span class="font-digital font-bold ${scoreColor(currentTot)} shrink-0">${fmtScore(currentTot)}</span>
+      </div>`;
+  }).join('');
+}
+
+function selectChartRound(idx) {
+  selectedChartRoundIdx = idx;
+  renderScoreChart();
+}
+
+function renderChartSnapshot(progression, roundIdx) {
+  const snapshotEl = document.getElementById('chart-round-snapshot');
+  if (!snapshotEl) return;
+  const step = progression[roundIdx];
+  if (!step) return;
+
+  const session = activeSession;
+  const roundTitle = roundIdx === 0
+    ? (currentLang === 'id' ? 'Kondisi Awal (Mulai)' : 'Initial State (Start)')
+    : (currentLang === 'id' ? `Klasemen Setelah Ronde ${roundIdx}` : `Standings After Round ${roundIdx}`);
+
+  const ranked = session.players.map((name, pi) => ({
+    name,
+    pi,
+    total: step.totals[pi],
+    delta: step.deltas[pi],
+    isBurned: step.burned.includes(pi)
+  })).sort((a, b) => b.total - a.total);
+
+  const medals = ['👑', '🥈', '🥉', '4️⃣'];
+
+  snapshotEl.innerHTML = `
+    <div class="flex items-center justify-between border-b border-amber-500/20 pb-1.5 mb-1.5">
+      <span class="font-bold text-amber-300 flex items-center gap-1.5">
+        <span>📍</span> <span>${roundTitle}</span>
+      </span>
+      <span class="text-[10px] text-slate-400">${currentLang === 'id' ? 'Klik titik ronde pada grafik' : 'Tap dots on chart to switch'}</span>
+    </div>
+    <div class="grid grid-cols-2 gap-1.5">
+      ${ranked.map((p, rIdx) => {
+        const deltaText = roundIdx > 0
+          ? `<span class="text-[10px] opacity-75">(${fmtScore(p.delta)})</span>`
+          : '';
+        const burnedText = p.isBurned
+          ? `<span class="text-[10px] text-amber-300 font-bold">🔥 Kebakar</span>`
+          : '';
+        return `
+          <div class="flex items-center justify-between px-2 py-1 rounded bg-black/40 border border-white/5">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="text-xs shrink-0">${medals[rIdx]}</span>
+              <span class="truncate font-semibold text-white">${esc(p.name)}</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0 font-digital font-bold text-xs ${scoreColor(p.total)}">
+              <span>${fmtScore(p.total)}</span>
+              ${burnedText || deltaText}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
 }
 
 async function startNewPhase() {
@@ -4098,6 +4500,7 @@ document.getElementById('modal-edit-score').addEventListener('click',   e => { i
 document.getElementById('modal-delete-round').addEventListener('click', e => { if(e.target===e.currentTarget) closeDeleteRoundModal(); });
 document.getElementById('modal-confirm').addEventListener('click',      e => { if(e.target===e.currentTarget) closeConfirm(); });
 document.getElementById('modal-rt').addEventListener('click',           e => { if(e.target===e.currentTarget) dismissRTModal(); });
+document.getElementById('modal-score-chart').addEventListener('click',    e => { if(e.target===e.currentTarget) closeScoreChartModal(); });
 document.getElementById('modal-theme').addEventListener('click',        e => { if(e.target===e.currentTarget) closeThemeModal(); });
 document.getElementById('mobile-nav-menu')?.addEventListener('click',   e => { if(e.target===e.currentTarget) closeMobileMenu(); });
 
