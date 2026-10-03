@@ -3865,12 +3865,15 @@ function renderScoreChart(targetPhase) {
     const val = Math.round(minVal + (i / gridSteps) * (maxVal - minVal));
     const y = getY(val);
     svgContent += `<line x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}" stroke="rgba(255,255,255,0.07)" stroke-width="1" />`;
-    svgContent += `<text x="${padL - 6}" y="${y + 3}" fill="rgba(255,255,255,0.45)" font-size="8.5" font-family="monospace" text-anchor="end">${val}</text>`;
+    if (Math.abs(y - zeroY) > 12) {
+      svgContent += `<text x="${padL - 6}" y="${y + 3}" fill="rgba(255,255,255,0.45)" font-size="8.5" font-family="monospace" text-anchor="end">${val}</text>`;
+    }
   }
 
-  // Zero line highlight
+  // Zero line highlight (Baseline 0 - selalu ada dan jelas agar mudah bedakan + dan -)
   if (zeroY >= padT && zeroY <= svgH - padB) {
-    svgContent += `<line x1="${padL}" y1="${zeroY}" x2="${svgW - padR}" y2="${zeroY}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3,3" />`;
+    svgContent += `<line x1="${padL}" y1="${zeroY}" x2="${svgW - padR}" y2="${zeroY}" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="3,3" />`;
+    svgContent += `<text x="${padL - 6}" y="${zeroY + 3.5}" fill="#ffffff" font-size="9.5" font-weight="bold" font-family="monospace" text-anchor="end">0</text>`;
   }
 
   // Target Score line highlight
