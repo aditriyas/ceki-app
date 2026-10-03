@@ -672,14 +672,16 @@
       </div>
       <p id="game-subtitle" class="text-xs text-[var(--muted-foreground)]"></p>
     </div>
-    <div class="flex items-center gap-1 shrink-0">
-      <button id="btn-toggle-close-session" onclick="toggleCloseSession(activeSessionId)" class="text-xs p-2 rounded-lg hover:bg-slate-500/10 transition-colors flex items-center gap-1 text-[var(--muted-foreground)] hover:text-amber-400" title="Close / Reopen Table">
-        <span id="btn-toggle-close-icon">🔒</span>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button id="btn-toggle-close-session" onclick="toggleCloseSession(activeSessionId)" class="text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-500/10 transition-colors flex items-center gap-1 text-[var(--muted-foreground)] hover:text-amber-400" title="Close / Reopen Table">
+        <span id="btn-toggle-close-icon">🏁</span>
         <span id="btn-toggle-close-label" class="hidden sm:inline font-medium">Close Table</span>
       </button>
-      <button onclick="confirmDeleteSession(activeSessionId)" class="text-xs text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-1" title="Delete Table">
-        <span>🗑️</span>
-        <span data-i18n="game_btn_delete" class="hidden sm:inline font-medium">Delete Table</span>
+      <button onclick="confirmDeleteSession(activeSessionId)" class="text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all flex items-center gap-1.5 shadow-sm" title="Delete Table">
+        <svg class="w-3.5 h-3.5 text-red-400 stroke-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span data-i18n="game_btn_delete" class="hidden sm:inline font-bold">Delete Table</span>
       </button>
     </div>
   </div>
@@ -694,11 +696,11 @@
 
   <!-- Closed Session Banner -->
   <div id="game-closed-banner" class="hidden mb-4 bg-slate-800/60 border border-slate-600/40 rounded-2xl p-4 text-center">
-    <div class="text-2xl mb-1">🔒</div>
+    <div class="text-2xl mb-1">🏁</div>
     <h3 data-i18n="game_closed_banner_title" class="font-bold text-sm text-slate-200">Table Closed (Read Only)</h3>
     <p data-i18n="game_closed_banner_sub" class="text-xs text-slate-400 mt-1">This table is closed. All scores and rounds are read-only.</p>
-    <button onclick="toggleCloseSession(activeSessionId)" data-i18n="session_btn_reopen" class="mt-3 text-xs bg-slate-700 hover:bg-slate-600 text-white font-semibold px-3.5 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1">
-      <span>🔓</span> <span>Reopen Table</span>
+    <button onclick="toggleCloseSession(activeSessionId)" data-i18n="session_btn_reopen" class="mt-3 text-xs bg-slate-700 hover:bg-slate-600 text-white font-semibold px-3.5 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-sm">
+      <span>🔄</span> <span>Reopen Table</span>
     </button>
   </div>
 
@@ -929,15 +931,17 @@
 
 <!-- Confirm Delete Round Modal -->
 <div id="modal-delete-round" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/50">
-  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
-    <div class="text-center mb-4">
-      <div class="text-3xl mb-2">🗑️</div>
-      <h3 data-i18n="modal_del_round_title" class="font-bold text-lg">Delete Round?</h3>
-      <p id="delete-round-desc" class="text-sm text-[var(--muted-foreground)] mt-1">This round will be permanently deleted and scoreboard will recalculate.</p>
+  <div class="bg-[var(--card)] border border-red-500/30 rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in text-center">
+    <div class="w-12 h-12 mx-auto rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-3 shadow-inner text-red-500">
+      <svg class="w-6 h-6 text-red-500 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
     </div>
-    <div class="flex gap-2">
-      <button onclick="closeDeleteRoundModal()" data-i18n="modal_btn_cancel" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Cancel</button>
-      <button onclick="executeDeleteRound()" data-i18n="modal_btn_delete" class="flex-1 bg-red-500 text-white font-semibold rounded-xl py-2.5 text-sm hover:bg-red-600 active:scale-[0.98] transition-all">Delete</button>
+    <h3 data-i18n="modal_del_round_title" class="font-bold text-lg">Delete Round?</h3>
+    <p id="delete-round-desc" class="text-xs text-[var(--muted-foreground)] mt-1">This round will be permanently deleted and scoreboard will recalculate.</p>
+    <div class="flex gap-2 mt-4">
+      <button onclick="closeDeleteRoundModal()" data-i18n="modal_btn_cancel" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-xs hover:opacity-80 transition-all">Cancel</button>
+      <button onclick="executeDeleteRound()" data-i18n="modal_btn_delete" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all shadow-md shadow-red-900/30">Delete</button>
     </div>
   </div>
 </div>
@@ -1053,24 +1057,49 @@
     <p id="rt-modal-prompt-text" class="text-xs text-slate-400 mb-3">Table reached target score! Start next phase or close table?</p>
     <div class="space-y-2">
       <button onclick="startNewPhase()" data-i18n="modal_btn_new_phase" class="w-full btn-gold rounded-xl py-2.5 text-xs font-black shadow-lg">NEW PHASE 🔄</button>
-      <button onclick="closeSessionFromRTModal()" data-i18n="modal_btn_close_session" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-amber-300 rounded-xl py-2.5 text-xs font-bold transition-all">CLOSE TABLE (FINISH) 🔒</button>
+      <button onclick="closeSessionFromRTModal()" data-i18n="modal_btn_close_session" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-amber-300 rounded-xl py-2.5 text-xs font-bold transition-all">CLOSE TABLE (FINISH) 🏁</button>
       <button onclick="dismissRTModal()" data-i18n="modal_btn_dismiss" class="w-full bg-transparent hover:bg-slate-800/40 text-slate-400 font-semibold rounded-xl py-1 text-xs transition-colors">Dismiss</button>
     </div>
   </div>
 </div>
 
 <!-- Confirm Delete Modal -->
-<div id="modal-confirm" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/40">
-  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xs shadow-2xl anim-in">
-    <div class="text-center mb-4">
-      <div class="text-3xl mb-2">🗑️</div>
-      <h3 data-i18n="modal_del_sess_title" class="font-bold text-lg">Delete Table?</h3>
-      <p id="modal-confirm-session-name" class="text-sm font-semibold text-red-400 mt-1 truncate"></p>
-      <p data-i18n="modal_del_sess_desc" class="text-xs text-[var(--muted-foreground)] mt-1">All round data and scores will be permanently deleted.</p>
+<div id="modal-confirm" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/50 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-red-500/40 rounded-3xl p-5 sm:p-6 w-full max-w-xs shadow-2xl anim-in text-center relative overflow-hidden flex flex-col">
+    <!-- Danger Trash Bin Icon -->
+    <div class="w-13 h-13 mx-auto rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-3 shadow-inner text-red-500">
+      <svg class="w-7 h-7 text-red-500 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
     </div>
-    <div class="flex gap-2">
-      <button onclick="closeConfirm()" data-i18n="modal_btn_cancel" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-sm hover:opacity-80">Cancel</button>
-      <button onclick="deleteSession()" class="flex-1 bg-red-500 text-white font-semibold rounded-xl py-2.5 text-sm hover:bg-red-600 active:scale-[0.98] transition-all">Delete</button>
+    <h3 data-i18n="modal_del_sess_title" class="font-bold text-lg text-[var(--foreground)]">Delete Table?</h3>
+    <p id="modal-confirm-session-name" class="text-xs font-semibold text-red-400 mt-1 truncate"></p>
+    <p data-i18n="modal_del_sess_desc" class="text-xs text-[var(--muted-foreground)] mt-1.5 leading-relaxed">
+      All round data and scores will be permanently deleted.
+    </p>
+
+    <!-- PIN input section if table has PIN -->
+    <div id="delete-pin-section" class="hidden mt-3.5 pt-3 border-t border-[var(--border)]/50">
+      <p class="text-[11px] font-semibold text-amber-300 mb-2 flex items-center justify-center gap-1.5" data-i18n="modal_del_pin_prompt">
+        <span>🔒</span> <span>Table is protected. Enter PIN or Master PIN to delete:</span>
+      </p>
+      <div id="delete-pin-boxes" class="flex justify-center items-center gap-2 mb-2">
+        <input type="password" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" class="delete-pin-box w-10 h-12 sm:w-11 sm:h-13 text-center text-xl font-black rounded-xl bg-black/40 border border-white/20 text-amber-400 focus:border-amber-400 focus:bg-amber-400/10 outline-none transition-all shadow-inner" />
+        <input type="password" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" class="delete-pin-box w-10 h-12 sm:w-11 sm:h-13 text-center text-xl font-black rounded-xl bg-black/40 border border-white/20 text-amber-400 focus:border-amber-400 focus:bg-amber-400/10 outline-none transition-all shadow-inner" />
+        <input type="password" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" class="delete-pin-box w-10 h-12 sm:w-11 sm:h-13 text-center text-xl font-black rounded-xl bg-black/40 border border-white/20 text-amber-400 focus:border-amber-400 focus:bg-amber-400/10 outline-none transition-all shadow-inner" />
+        <input type="password" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" class="delete-pin-box w-10 h-12 sm:w-11 sm:h-13 text-center text-xl font-black rounded-xl bg-black/40 border border-white/20 text-amber-400 focus:border-amber-400 focus:bg-amber-400/10 outline-none transition-all shadow-inner" />
+      </div>
+      <p id="delete-pin-err" class="hidden text-red-400 text-xs mb-2 font-semibold"></p>
+    </div>
+
+    <div class="flex gap-2.5 mt-4">
+      <button onclick="closeConfirm()" data-i18n="modal_btn_cancel" class="flex-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold rounded-xl py-2.5 text-xs hover:opacity-80 transition-all">Cancel</button>
+      <button onclick="deleteSession()" data-i18n="modal_btn_delete" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl py-2.5 text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-md shadow-red-900/30">
+        <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span>Delete</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1089,8 +1118,8 @@ let activeSession    = null;
 let activeRounds     = [];
 let historyVisible   = false;
 let modalPlayerIdx   = null;
-let allSessions      = [];
-let allSessionsRoundsMap = {};
+var allSessions      = [];
+var allSessionsRoundsMap = {};
 let rtTriggerPlayers = []; // players who just hit ≥1000
 let selectedHistoryPhase = null;
 let editRoundId      = null;
@@ -1265,13 +1294,14 @@ const translations = {
     modal_btn_dismiss: "Dismiss",
     modal_btn_new_phase: "NEW PHASE 🔄",
     modal_btn_new_phase_classic: "Start New Phase",
-    modal_btn_close_session: "CLOSE TABLE (FINISH) 🔒",
+    modal_btn_close_session: "CLOSE TABLE (FINISH) 🏁",
     modal_btn_close_session_classic: "Close Session",
 
     // Modals - Delete Session
     modal_del_sess_title: "Delete Table?",
     modal_del_sess_title_classic: "Delete Session?",
     modal_del_sess_desc: "All round data and scores will be permanently deleted.",
+    modal_del_pin_prompt: "Table is protected. Enter PIN or Master PIN to delete:",
 
     // Modals - Theme
     modal_theme_title: "App Theme",
@@ -1296,8 +1326,8 @@ const translations = {
     audit_action_del_round: "🗑️ Round Deleted",
     audit_action_del_session: "🗑️ Session Deleted",
     audit_action_new_phase: "🔄 New Phase",
-    audit_action_close_session: "🔒 Table Closed",
-    audit_action_reopen_session: "🔓 Table Reopened",
+    audit_action_close_session: "🏁 Table Closed",
+    audit_action_reopen_session: "🔄 Table Reopened",
     audit_ip_label: "IP Address:",
     audit_loc_label: "Location:",
     audit_dev_label: "Device:",
@@ -1491,13 +1521,14 @@ const translations = {
     modal_btn_dismiss: "Tutup",
     modal_btn_new_phase: "FASE BARU 🔄",
     modal_btn_new_phase_classic: "Mulai Fase Baru",
-    modal_btn_close_session: "TUTUP MEJA (SELESAI) 🔒",
+    modal_btn_close_session: "TUTUP MEJA (SELESAI) 🏁",
     modal_btn_close_session_classic: "Tutup Sesi",
 
     // Modals - Delete Session
     modal_del_sess_title: "Hapus Meja?",
     modal_del_sess_title_classic: "Hapus Sesi?",
     modal_del_sess_desc: "Semua data putaran dan skor akan dihapus permanen.",
+    modal_del_pin_prompt: "Meja dilindungi PIN. Masukkan PIN / Master PIN untuk menghapus:",
 
     // Modals - Theme
     modal_theme_title: "Tema Aplikasi",
@@ -1522,8 +1553,8 @@ const translations = {
     audit_action_del_round: "🗑️ Putaran Dihapus",
     audit_action_del_session: "🗑️ Sesi Dihapus",
     audit_action_new_phase: "🔄 Fase Baru",
-    audit_action_close_session: "🔒 Meja Ditutup",
-    audit_action_reopen_session: "🔓 Meja Dibuka Kembali",
+    audit_action_close_session: "🏁 Meja Ditutup",
+    audit_action_reopen_session: "🔄 Meja Dibuka Kembali",
     audit_ip_label: "Alamat IP:",
     audit_loc_label: "Lokasi:",
     audit_dev_label: "Perangkat:",
@@ -2604,7 +2635,7 @@ function renderSavedSessionsMini() {
       <div class="flex items-center gap-2">
         <p class="font-semibold text-sm">${esc(s.name)}</p>
         ${hasPin ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">🔒 ${t('pin_badge')}</span>` : ''}
-        ${isClosed ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-600/30 text-slate-300 border border-slate-500/30">🔒 ${t('badge_closed')}</span>` : ''}
+        ${isClosed ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-600/30 text-slate-300 border border-slate-500/30">🏁 ${t('badge_closed')}</span>` : ''}
       </div>
       <p class="text-xs text-[var(--muted-foreground)]">${s.players.join(', ')}</p>
     </div>`;
@@ -2944,7 +2975,7 @@ async function renderSessionsList(sessions = null) {
             <div class="flex items-center gap-2">
               <h3 class="font-bold text-base truncate hover:text-[var(--primary)] transition-colors">${esc(s.name)}</h3>
               ${hasPin ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1">🔒 ${t('pin_badge')}</span>` : ''}
-              ${isClosed ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-600/30 text-slate-300 border border-slate-500/40 shrink-0">🔒 ${t('badge_closed')}</span>` : ''}
+              ${isClosed ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-600/30 text-slate-300 border border-slate-500/40 shrink-0">🏁 ${t('badge_closed')}</span>` : ''}
             </div>
             <p class="text-xs text-[var(--muted-foreground)] flex items-center gap-1.5 flex-wrap mt-0.5">
               <span>${subtitle}</span>
@@ -2956,12 +2987,14 @@ async function renderSessionsList(sessions = null) {
             <button onclick="event.stopPropagation(); toggleCloseSession('${s.id}')"
                     class="text-xs text-[var(--muted-foreground)] hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
                     title="${isClosed ? t('session_btn_reopen') : t('session_btn_close')}">
-              ${isClosed ? '🔓' : '🔒'}
+              ${isClosed ? '🔄' : '🏁'}
             </button>
             <button onclick="event.stopPropagation(); confirmDeleteSession('${s.id}')"
-                    class="text-xs text-[var(--muted-foreground)] hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                    class="text-xs text-red-400 hover:text-red-300 p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all flex items-center justify-center shadow-sm"
                     title="${t('game_btn_delete')}">
-              🗑️
+              <svg class="w-3.5 h-3.5 text-red-400 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </button>
           </div>
         </div>
@@ -3081,12 +3114,12 @@ function renderGame() {
   const closedBadge = document.getElementById('game-closed-badge');
   if (closedBadge) {
     closedBadge.classList.toggle('hidden', !isClosed);
-    closedBadge.textContent = t('badge_closed');
+    closedBadge.textContent = `🏁 ${t('badge_closed')}`;
   }
 
   const toggleBtnIcon = document.getElementById('btn-toggle-close-icon');
   const toggleBtnLabel = document.getElementById('btn-toggle-close-label');
-  if (toggleBtnIcon) toggleBtnIcon.textContent = isClosed ? '🔓' : '🔒';
+  if (toggleBtnIcon) toggleBtnIcon.textContent = isClosed ? '🔄' : '🏁';
   if (toggleBtnLabel) toggleBtnLabel.textContent = isClosed ? t('session_btn_reopen') : t('session_btn_close');
 
   // Closed banner
@@ -3168,7 +3201,7 @@ function renderGame() {
     const borderGlow = (isFirst && isCasino) ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : '';
     const clickHandler = isClosed ? '' : (submitted ? '' : `openModal(${i})`);
     const cardCursor = isClosed ? 'cursor-default opacity-85' : 'cursor-pointer card-hover';
-    const bottomLabel = isClosed ? `🔒 ${t('badge_closed')}` : (submitted ? t('game_submitted_badge') : t('game_tap_badge'));
+    const bottomLabel = isClosed ? `🏁 ${t('badge_closed')}` : (submitted ? t('game_submitted_badge') : t('game_tap_badge'));
 
     return `
       <div onclick="${clickHandler}"
@@ -4989,23 +5022,86 @@ let sessionToDeleteId = null;
 
 function confirmDeleteSession(sessionId = null) {
   sessionToDeleteId = sessionId || activeSessionId;
-  const s = allSessions.find(x => x.id === sessionToDeleteId) || activeSession;
+  const s = allSessions.find(x => x.id === sessionToDeleteId) || (activeSessionId === sessionToDeleteId ? activeSession : null);
   const name = s ? s.name : 'this session';
   const nameEl = document.getElementById('modal-confirm-session-name');
   if (nameEl) nameEl.textContent = `"${name}"`;
+
+  // Check if session is protected with PIN
+  const targetPin = getSessionPin(s);
+  const pinSection = document.getElementById('delete-pin-section');
+  const errEl = document.getElementById('delete-pin-err');
+  const boxes = document.querySelectorAll('.delete-pin-box');
+
+  if (errEl) {
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+  }
+  boxes.forEach(b => {
+    b.value = '';
+    b.classList.remove('border-red-500', 'bg-red-500/10');
+  });
+
+  if (targetPin) {
+    if (pinSection) pinSection.classList.remove('hidden');
+    setTimeout(() => {
+      const firstBox = document.querySelector('.delete-pin-box');
+      if (firstBox) firstBox.focus();
+    }, 100);
+  } else {
+    if (pinSection) pinSection.classList.add('hidden');
+  }
+
   show('modal-confirm');
 }
 
 function closeConfirm() {
   sessionToDeleteId = null;
+  const pinSection = document.getElementById('delete-pin-section');
+  const errEl = document.getElementById('delete-pin-err');
+  if (pinSection) pinSection.classList.add('hidden');
+  if (errEl) {
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+  }
+  document.querySelectorAll('.delete-pin-box').forEach(b => {
+    b.value = '';
+    b.classList.remove('border-red-500', 'bg-red-500/10');
+  });
   hide('modal-confirm');
 }
 
 async function deleteSession() {
   const targetId = sessionToDeleteId || activeSessionId;
   if (!targetId) return;
-  const targetSession = allSessions.find(s => s.id === targetId) || activeSession;
+  const targetSession = allSessions.find(s => s.id === targetId) || (activeSessionId === targetId ? activeSession : null);
   const targetName = targetSession ? targetSession.name : 'Unknown';
+
+  // Check PIN if session is protected
+  const targetPin = getSessionPin(targetSession);
+  if (targetPin) {
+    const boxes = document.querySelectorAll('.delete-pin-box');
+    const enteredPin = Array.from(boxes).map(b => b.value.trim()).join('');
+    if (enteredPin.length !== 4 || (enteredPin !== targetPin && enteredPin !== MASTER_PIN)) {
+      const errEl = document.getElementById('delete-pin-err');
+      if (errEl) {
+        errEl.textContent = t('pin_prompt_err');
+        errEl.classList.remove('hidden');
+      }
+      const boxesContainer = document.getElementById('delete-pin-boxes');
+      if (boxesContainer) {
+        boxesContainer.classList.remove('anim-shake');
+        void boxesContainer.offsetWidth;
+        boxesContainer.classList.add('anim-shake');
+      }
+      boxes.forEach(b => {
+        b.value = '';
+        b.classList.add('border-red-500', 'bg-red-500/10');
+      });
+      if (boxes[0]) boxes[0].focus();
+      return;
+    }
+  }
 
   showLoading(currentLang === 'id' ? 'Menghapus meja...' : 'Deleting session...');
 
@@ -5447,6 +5543,7 @@ document.addEventListener('click', e => {
 // Bind OTP numeric inputs for Table PIN Setup and Unlock Prompt
 bindOtpInputs('#setup-pin-boxes');
 bindOtpInputs('#prompt-pin-boxes', submitSessionPinPrompt, submitSessionPinPrompt);
+bindOtpInputs('#delete-pin-boxes', deleteSession, deleteSession);
 
 init();
 </script>
