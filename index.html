@@ -919,11 +919,14 @@
       <button type="button" onclick="closeScoreChartModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted-foreground)] hover:text-white hover:bg-white/10 active:scale-90 transition-all text-xl font-bold shrink-0 ml-2" aria-label="Close">✕</button>
     </div>
 
-    <!-- Phase Selector Tabs inside Chart Modal -->
-    <div id="chart-phase-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1.5 shrink-0"></div>
+    <!-- Chart View Mode Switcher (Line, Race, Bump, Heatmap) -->
+    <div class="flex flex-col gap-1.5 mb-2 shrink-0">
+      <div id="chart-view-selector" class="grid grid-cols-4 gap-1 p-1 bg-black/60 border border-white/10 rounded-2xl select-none"></div>
+      <div id="chart-phase-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-0.5"></div>
+    </div>
 
-    <!-- SVG Chart Container -->
-    <div class="relative bg-black/40 border border-[var(--border)]/60 rounded-2xl p-2 overflow-hidden flex-1 min-h-[220px] flex flex-col justify-center">
+    <!-- Chart Main Viewport Container -->
+    <div class="relative bg-black/40 border border-[var(--border)]/60 rounded-2xl p-2 overflow-hidden flex-1 min-h-[225px] flex flex-col justify-center">
       <div id="chart-svg-container" class="w-full h-full flex items-center justify-center"></div>
     </div>
 
@@ -3735,11 +3738,108 @@ async function closeSessionFromRTModal() {
   await toggleCloseSession(activeSessionId);
 }
 
-// ── Score Trend Line Chart (Option 4) ─────────────────────
+// ── Score Trend & Visual Analytics ─────────────────────
 const CHART_COLORS = ['#f59e0b', '#06b6d4', '#a855f7', '#10b981']; // Gold, Cyan, Purple, Emerald
+let currentChartView = 'line'; // 'line' | 'race' | 'bump' | 'matrix'
 let selectedChartPhase = 1;
 let selectedChartRoundIdx = null;
 let selectedPlayerChartFilters = []; // empty array = all players, otherwise array of selected player indices [0, 2]
+let isRacePlaying = false;
+let racePlayInterval = null;
+
+function setChartViewMode(mode) {
+  if (currentChartView === mode) return;
+  stopRaceAutoPlay();
+  currentChartView = mode;
+  renderScoreChart();
+}
+
+function stopRaceAutoPlay() {
+  if (racePlayInterval) {
+    clearInterval(racePlayInterval);
+    racePlayInterval = null;
+  }
+  isRacePlaying = false;
+  const btn = document.getElementById('race-play-btn');
+  if (btn) {
+    btn.innerHTML = `<span>▶</span><span>${currentLang === 'id' ? 'Putar' : 'Play'}</span>`;
+    btn.className = "px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 active:scale-95 transition-all bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40";
+  }
+}
+
+function startRaceAutoPlay() {
+  stopRaceAutoPlay();
+  isRacePlaying = true;
+  const btn = document.getElementById('race-play-btn');
+  if (btn) {
+    btn.innerHTML = `<span class="animate-pulse">⏸</span><span>${currentLang === 'id' ? 'Jeda' : 'Pause'}</span>`;
+    btn.className = "px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 active:scale-95 transition-all bg-amber-500 text-black border border-amber-400 shadow-md shadow-amber-500/30";
+  }
+
+  racePlayInterval = setInterval(() => {
+    const session = activeSession;
+    const rounds = activeRounds;
+    if (!session) { stopRaceAutoPlay(); return; }
+    const progression = getPhaseProgression(session, rounds, selectedChartPhase);
+    if (!progression || progression.length <= 1) { stopRaceAutoPlay(); return; }
+
+    if (selectedChartRoundIdx == null || selectedChartRoundIdx >= progression.length - 1) {
+      selectedChartRoundIdx = 0;
+    } else {
+      selectedChartRoundIdx++;
+    }
+    renderScoreChart();
+  }, 420);
+}
+
+function toggleRaceAutoPlay() {
+  if (isRacePlaying) {
+    stopRaceAutoPlay();
+  } else {
+    startRaceAutoPlay();
+  }
+}
+
+function stepRaceRound(dir) {
+  stopRaceAutoPlay();
+  const session = activeSession;
+  const rounds = activeRounds;
+  if (!session) return;
+  const progression = getPhaseProgression(session, rounds, selectedChartPhase);
+  if (!progression || progression.length <= 1) return;
+  const nextIdx = Math.max(0, Math.min(progression.length - 1, (selectedChartRoundIdx ?? 0) + dir));
+  selectChartRound(nextIdx);
+}
+
+function scrubRaceRound(val) {
+  stopRaceAutoPlay();
+  selectChartRound(parseInt(val, 10));
+}
+
+function renderChartViewTabs() {
+  const selEl = document.getElementById('chart-view-selector');
+  if (!selEl) return;
+  const views = [
+    { id: 'line', icon: '📈', label: currentLang === 'id' ? 'Garis' : 'Line' },
+    { id: 'race', icon: '🏎️', label: currentLang === 'id' ? 'Balap' : 'Race' },
+    { id: 'bump', icon: '🏅', label: currentLang === 'id' ? 'Posisi' : 'Rank' },
+    { id: 'matrix', icon: '🟩', label: currentLang === 'id' ? 'Matriks' : 'Matrix' }
+  ];
+  selEl.innerHTML = views.map(v => {
+    const isActive = (currentChartView === v.id);
+    return `
+      <button type="button" onclick="setChartViewMode('${v.id}')"
+        class="py-1 px-1 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 select-none ${
+          isActive
+            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-md shadow-amber-500/25 scale-[1.02]'
+            : 'text-[var(--muted-foreground)] hover:text-white hover:bg-white/5 active:scale-95'
+        }">
+        <span>${v.icon}</span>
+        <span>${v.label}</span>
+      </button>
+    `;
+  }).join('');
+}
 
 function openScoreChartModal() {
   const session = activeSession;
@@ -3749,18 +3849,19 @@ function openScoreChartModal() {
   selectedChartPhase = selectedHistoryPhase || curPhase;
   selectedChartRoundIdx = null;
   selectedPlayerChartFilters = [];
+  stopRaceAutoPlay();
   show('modal-score-chart');
   renderScoreChart();
 }
 
 function closeScoreChartModal() {
+  stopRaceAutoPlay();
   hide('modal-score-chart');
 }
 
 function togglePlayerChartFilter(pi) {
   const totalPlayers = activeSession ? activeSession.players.length : 4;
   if (!selectedPlayerChartFilters || selectedPlayerChartFilters.length === 0) {
-    // Start filtering: isolate this player
     selectedPlayerChartFilters = [pi];
   } else {
     const idx = selectedPlayerChartFilters.indexOf(pi);
@@ -3784,13 +3885,25 @@ function resetPlayerChartFilter() {
   renderScoreChart();
 }
 
+function selectChartRound(idx) {
+  selectedChartRoundIdx = idx;
+  renderScoreChart();
+}
+
 function renderScoreChart(targetPhase) {
   const session = activeSession;
   const rounds = activeRounds;
   if (!session) return;
 
-  if (targetPhase) selectedChartPhase = targetPhase;
+  if (targetPhase && targetPhase !== selectedChartPhase) {
+    stopRaceAutoPlay();
+    selectedChartPhase = targetPhase;
+    selectedChartRoundIdx = null;
+  }
   const phase = selectedChartPhase;
+
+  // Render view switcher buttons
+  renderChartViewTabs();
 
   // Render Phase Tabs inside chart modal
   const done = (rounds || []).filter(r => r.is_complete);
@@ -3815,8 +3928,6 @@ function renderScoreChart(targetPhase) {
   const targetScore = getTargetScore(session);
   const container = document.getElementById('chart-svg-container');
   const snapshotEl = document.getElementById('chart-round-snapshot');
-  const indicatorEl = document.getElementById('chart-filter-indicator');
-  const legendsEl = document.getElementById('chart-legends');
 
   if (progression.length <= 1) {
     container.innerHTML = `
@@ -3825,12 +3936,29 @@ function renderScoreChart(targetPhase) {
         <p class="font-medium">${currentLang === 'id' ? 'Belum ada putaran selesai di fase ini.' : 'No completed rounds in this phase yet.'}</p>
       </div>`;
     if (snapshotEl) snapshotEl.innerHTML = '';
-    if (indicatorEl) indicatorEl.innerHTML = '';
-    if (legendsEl) legendsEl.innerHTML = '';
     return;
   }
 
-  // Calculate bounds
+  if (selectedChartRoundIdx == null || selectedChartRoundIdx >= progression.length) {
+    selectedChartRoundIdx = progression.length - 1;
+  }
+
+  // Route to the active view renderer
+  if (currentChartView === 'race') {
+    renderRaceTrackView(session, progression, targetScore, container);
+  } else if (currentChartView === 'bump') {
+    renderBumpChartView(session, progression, container);
+  } else if (currentChartView === 'matrix') {
+    renderHeatmapView(session, progression, targetScore, container);
+  } else {
+    renderLineChartView(session, progression, targetScore, container);
+  }
+
+  renderChartSnapshot(progression, selectedChartRoundIdx);
+}
+
+// ── View 1: Line Chart ────────────────────────────────────
+function renderLineChartView(session, progression, targetScore, container) {
   let allValues = [0, targetScore];
   progression.forEach(step => {
     step.totals.forEach(t => allValues.push(t));
@@ -3868,7 +3996,7 @@ function renderScoreChart(targetPhase) {
     svgContent += `<text x="${padL - 6}" y="${y + 3}" fill="rgba(255,255,255,0.45)" font-size="8.5" font-family="monospace" text-anchor="end">${val}</text>`;
   }
 
-  // Zero line highlight
+  // Zero line highlight (clean, no text label per user request)
   if (zeroY >= padT && zeroY <= svgH - padB) {
     svgContent += `<line x1="${padL}" y1="${zeroY}" x2="${svgW - padR}" y2="${zeroY}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3,3" />`;
   }
@@ -3879,7 +4007,7 @@ function renderScoreChart(targetPhase) {
     svgContent += `<text x="${svgW - padR}" y="${targetY - 5}" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="end">🎯 ${targetScore}</text>`;
   }
 
-  // X Axis markers with smart spacing to prevent text collision
+  // X Axis markers with smart spacing
   let labelInterval = 1;
   if (numSteps > 30) labelInterval = 5;
   else if (numSteps > 18) labelInterval = 3;
@@ -3893,18 +4021,15 @@ function renderScoreChart(targetPhase) {
       svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 4}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />`;
       svgContent += `<text x="${x}" y="${svgH - padB + 13}" fill="rgba(255,255,255,0.6)" font-size="8" font-family="monospace" text-anchor="middle">${label}</text>`;
     } else {
-      svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${svgH - padB + 2}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
+      svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 2}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
   });
 
   // Selected round vertical indicator
-  if (selectedChartRoundIdx == null || selectedChartRoundIdx >= progression.length) {
-    selectedChartRoundIdx = progression.length - 1;
-  }
   const selX = getX(selectedChartRoundIdx);
   svgContent += `<line x1="${selX}" y1="${padT}" x2="${selX}" y2="${svgH - padB}" stroke="rgba(251,191,36,0.6)" stroke-width="1.5" stroke-dasharray="2,2" />`;
 
-  // Filter which players to draw (support multiple selections)
+  // Filter which players to draw
   const isFilterActive = (selectedPlayerChartFilters && selectedPlayerChartFilters.length > 0);
   const playersToDraw = isFilterActive
     ? selectedPlayerChartFilters
@@ -3912,7 +4037,7 @@ function renderScoreChart(targetPhase) {
 
   const strokeW = isFilterActive ? (playersToDraw.length === 1 ? 3.5 : 2.8) : 2.4;
 
-  // Draw Player Polylines (crisp SVG lines without GPU filter artifacts)
+  // Draw Player Polylines
   playersToDraw.forEach((pi) => {
     const color = CHART_COLORS[pi % CHART_COLORS.length];
     const points = progression.map((step, idx) => `${getX(idx)},${getY(step.totals[pi])}`).join(' ');
@@ -3950,13 +4075,405 @@ function renderScoreChart(targetPhase) {
     <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-auto select-none overflow-visible">
       ${svgContent}
     </svg>`;
-
-  renderChartSnapshot(progression, selectedChartRoundIdx);
 }
 
-function selectChartRound(idx) {
-  selectedChartRoundIdx = idx;
-  renderScoreChart();
+// ── View 2: Race Track / F1 Bar Race ──────────────────────
+function renderRaceTrackView(session, progression, targetScore, container) {
+  const roundIdx = selectedChartRoundIdx ?? (progression.length - 1);
+  const step = progression[roundIdx];
+  const numSteps = progression.length - 1;
+
+  let allTotals = [0, targetScore];
+  progression.forEach(s => s.totals.forEach(t => allTotals.push(t)));
+  const minVal = Math.min(...allTotals);
+  const maxVal = Math.max(...allTotals);
+  const scoreSpan = (maxVal - minVal) || 100;
+
+  const zeroPct = minVal < 0 ? ((0 - minVal) / scoreSpan) * 100 : 0;
+  const targetPct = Math.min(98, Math.max(zeroPct + 15, ((targetScore - minVal) / scoreSpan) * 100));
+
+  const isPlaying = isRacePlaying;
+  const playBtnHtml = `
+    <button type="button" id="race-play-btn" onclick="toggleRaceAutoPlay()"
+      class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0 ${
+        isPlaying
+          ? 'bg-amber-500 text-black border border-amber-400 shadow-md shadow-amber-500/30'
+          : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+      }">
+      <span class="${isPlaying ? 'animate-pulse' : ''}">${isPlaying ? '⏸' : '▶'}</span>
+      <span>${isPlaying ? (currentLang === 'id' ? 'Jeda' : 'Pause') : (currentLang === 'id' ? 'Putar' : 'Play')}</span>
+    </button>
+  `;
+
+  const prevBtnDisabled = (roundIdx === 0);
+  const nextBtnDisabled = (roundIdx === numSteps);
+
+  const controlsHtml = `
+    <div class="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-white/10 w-full select-none">
+      ${playBtnHtml}
+      <button type="button" onclick="stepRaceRound(-1)" ${prevBtnDisabled ? 'disabled' : ''}
+        class="w-6 h-6 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 text-white disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-all text-[11px] font-bold shrink-0">
+        ◀
+      </button>
+      <input type="range" min="0" max="${numSteps}" value="${roundIdx}" oninput="scrubRaceRound(this.value)"
+        class="flex-1 min-w-0 accent-amber-400 h-1.5 bg-white/20 rounded-lg cursor-pointer">
+      <button type="button" onclick="stepRaceRound(1)" ${nextBtnDisabled ? 'disabled' : ''}
+        class="w-6 h-6 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 text-white disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-all text-[11px] font-bold shrink-0">
+        ▶
+      </button>
+      <div class="px-1.5 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-mono font-bold text-amber-300 shrink-0">
+        ${roundIdx === 0 ? (currentLang === 'id' ? '🏁 Start' : '🏁 Start') : `R${roundIdx}`}
+      </div>
+    </div>
+  `;
+
+  const sortedPlayers = session.players.map((name, pi) => ({
+    name,
+    pi,
+    total: step.totals[pi],
+    delta: step.deltas[pi],
+    isBurned: step.burned.includes(pi)
+  })).sort((a, b) => b.total - a.total);
+
+  const medals = ['👑', '🥈', '🥉', '4️⃣'];
+  const isFilterActive = (selectedPlayerChartFilters && selectedPlayerChartFilters.length > 0);
+
+  const tracksHtml = sortedPlayers.map((p, rankIdx) => {
+    const color = CHART_COLORS[p.pi % CHART_COLORS.length];
+    const isSelected = isFilterActive ? selectedPlayerChartFilters.includes(p.pi) : true;
+
+    const currentVal = p.total;
+    let barLeft = zeroPct;
+    let barWidth = 0;
+    let isNeg = false;
+
+    if (currentVal >= 0) {
+      const currentPct = ((currentVal - minVal) / scoreSpan) * 100;
+      barLeft = zeroPct;
+      barWidth = Math.max(1.5, currentPct - zeroPct);
+    } else {
+      isNeg = true;
+      const currentPct = ((currentVal - minVal) / scoreSpan) * 100;
+      barLeft = currentPct;
+      barWidth = Math.max(1.5, zeroPct - currentPct);
+    }
+
+    const deltaText = roundIdx > 0
+      ? `<span class="text-[9.5px] font-mono ${p.delta > 0 ? 'text-emerald-400' : p.delta < 0 ? 'text-rose-400' : 'text-slate-500'}">(${fmtScore(p.delta)})</span>`
+      : '';
+
+    const burnedBadge = p.isBurned
+      ? `<span class="animate-bounce inline-block text-xs" title="Kebakar!">🔥</span>`
+      : '';
+
+    return `
+      <div onclick="togglePlayerChartFilter(${p.pi})"
+        class="flex flex-col gap-1 py-1 cursor-pointer transition-all ${isFilterActive && !isSelected ? 'opacity-30' : 'opacity-100'}">
+        <div class="flex items-center justify-between text-xs px-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-xs shrink-0">${medals[rankIdx]}</span>
+            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${color}"></span>
+            <span class="font-bold text-white text-[11px] truncate max-w-[110px]">${esc(p.name)}</span>
+            ${burnedBadge}
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${deltaText}
+            <span class="font-digital font-bold text-xs ${scoreColor(p.total)}">${fmtScore(p.total)}</span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-4 bg-white/[0.04] border border-white/10 rounded-full overflow-hidden flex items-center">
+          ${minVal < 0 ? `<div class="absolute top-0 bottom-0 w-px bg-white/20 z-10" style="left: ${zeroPct}%"></div>` : ''}
+
+          <div class="absolute top-0 bottom-0 w-0.5 bg-amber-400/70 border-r border-dashed border-amber-300 z-10" style="left: ${targetPct}%">
+            <span class="absolute -top-3.5 -right-2 text-[8px] font-bold text-amber-400 font-mono">🎯</span>
+          </div>
+
+          <div class="h-full rounded-full transition-all duration-300 ease-out relative ${
+            isNeg
+              ? 'bg-gradient-to-l from-rose-500/80 to-rose-700/80 shadow-sm'
+              : 'shadow-sm'
+          }"
+          style="left: ${barLeft}%; width: ${barWidth}%; background-color: ${isNeg ? '' : color};">
+            <div class="absolute right-0 top-0 bottom-0 w-1.5 rounded-full bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="w-full flex flex-col justify-center px-1">
+      ${controlsHtml}
+      <div class="flex flex-col gap-0.5 w-full">
+        ${tracksHtml}
+      </div>
+    </div>
+  `;
+}
+
+// ── View 3: Bump Chart (Rank Trajectory) ──────────────────
+function renderBumpChartView(session, progression, container) {
+  const numSteps = progression.length - 1;
+  const numPlayers = session.players.length;
+
+  const svgW = 380;
+  const svgH = 215;
+  const padL = 48;
+  const padR = 24;
+  const padT = 22;
+  const padB = 26;
+  const plotW = svgW - padL - padR;
+  const plotH = svgH - padT - padB;
+
+  const rankH = plotH / (numPlayers - 1 || 1);
+  const getY = (rankIdx) => padT + rankIdx * rankH;
+  const getX = (idx) => padL + (idx / numSteps) * plotW;
+
+  const rankLabels = ['👑 1st', '🥈 2nd', '🥉 3rd', '4️⃣ 4th'];
+
+  let svgContent = '';
+
+  // 4 Horizontal Rank Guide Lanes
+  for (let r = 0; r < numPlayers; r++) {
+    const y = getY(r);
+    svgContent += `<line x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3" />`;
+    svgContent += `<text x="${padL - 6}" y="${y + 3.5}" fill="rgba(255,255,255,0.55)" font-size="8.5" font-family="sans-serif" font-weight="bold" text-anchor="end">${rankLabels[r] || (r+1)}</text>`;
+  }
+
+  // Pre-calculate ranks for every player at every step
+  const ranksPerStep = progression.map(step => {
+    const ranked = session.players.map((_, pi) => ({ pi, total: step.totals[pi] }))
+      .sort((a, b) => b.total - a.total);
+    const ranks = {};
+    ranked.forEach((item, rIdx) => { ranks[item.pi] = rIdx; });
+    return ranks;
+  });
+
+  // Vertical line for selected round
+  const selX = getX(selectedChartRoundIdx);
+  svgContent += `<line x1="${selX}" y1="${padT}" x2="${selX}" y2="${svgH - padB}" stroke="rgba(251,191,36,0.6)" stroke-width="1.5" stroke-dasharray="2,2" />`;
+
+  // Filter check
+  const isFilterActive = (selectedPlayerChartFilters && selectedPlayerChartFilters.length > 0);
+  const playersToDraw = isFilterActive ? selectedPlayerChartFilters : session.players.map((_, i) => i);
+
+  // Draw Smooth Bezier Paths for each player
+  session.players.forEach((_, pi) => {
+    const isSelected = isFilterActive ? selectedPlayerChartFilters.includes(pi) : true;
+    if (isFilterActive && !isSelected) return;
+
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    const strokeW = isFilterActive ? (playersToDraw.length === 1 ? 3.5 : 3.0) : 2.6;
+
+    let pathD = '';
+    for (let idx = 0; idx < progression.length; idx++) {
+      const x = getX(idx);
+      const y = getY(ranksPerStep[idx][pi]);
+      if (idx === 0) {
+        pathD += `M ${x} ${y}`;
+      } else {
+        const prevX = getX(idx - 1);
+        const prevY = getY(ranksPerStep[idx - 1][pi]);
+        const dx = (x - prevX) / 2;
+        pathD += ` C ${prevX + dx} ${prevY}, ${x - dx} ${y}, ${x} ${y}`;
+      }
+    }
+    svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round" />`;
+  });
+
+  // Draw Nodes (Dots & Burns)
+  session.players.forEach((_, pi) => {
+    const isSelected = isFilterActive ? selectedPlayerChartFilters.includes(pi) : true;
+    if (isFilterActive && !isSelected) return;
+
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    progression.forEach((step, idx) => {
+      const x = getX(idx);
+      const y = getY(ranksPerStep[idx][pi]);
+      const isBurned = step.burned.includes(pi);
+      const isCurRound = (idx === selectedChartRoundIdx);
+
+      if (isBurned) {
+        svgContent += `
+          <circle cx="${x}" cy="${y}" r="6" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+          <text x="${x}" y="${y - 8}" font-size="11" text-anchor="middle">🔥</text>
+        `;
+      } else {
+        svgContent += `
+          <circle cx="${x}" cy="${y}" r="${isCurRound ? 4.5 : 3}" fill="${isCurRound ? '#ffffff' : color}" stroke="${color}" stroke-width="${isCurRound ? 2 : 1.5}" />
+        `;
+      }
+    });
+  });
+
+  // X Axis markers with smart spacing
+  let labelInterval = 1;
+  if (numSteps > 30) labelInterval = 5;
+  else if (numSteps > 18) labelInterval = 3;
+  else if (numSteps > 10) labelInterval = 2;
+
+  progression.forEach((_, idx) => {
+    const x = getX(idx);
+    const isMajor = (idx === 0 || idx === numSteps || (idx % labelInterval === 0 && (numSteps - idx) >= 2));
+    if (isMajor) {
+      const label = idx === 0 ? '0' : `R${idx}`;
+      svgContent += `<line x1="${x}" y1="${svgH - padB}" x2="${x}" y2="${svgH - padB + 4}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />`;
+      svgContent += `<text x="${x}" y="${svgH - padB + 13}" fill="rgba(255,255,255,0.6)" font-size="8" font-family="monospace" text-anchor="middle">${label}</text>`;
+    }
+  });
+
+  // Interactive touch column overlays
+  progression.forEach((_, idx) => {
+    const x = getX(idx);
+    const colW = Math.max(16, plotW / numSteps);
+    svgContent += `<rect x="${x - colW/2}" y="${padT}" width="${colW}" height="${plotH}" fill="transparent" class="cursor-pointer" onclick="selectChartRound(${idx})" />`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-auto select-none overflow-visible">
+      ${svgContent}
+    </svg>`;
+}
+
+// ── View 4: Heatmap Score Matrix ──────────────────────────
+function renderHeatmapView(session, progression, targetScore, container) {
+  const roundIdx = selectedChartRoundIdx ?? (progression.length - 1);
+  const numSteps = progression.length - 1;
+  const players = session.players;
+
+  let maxSingleWin = { delta: 0, player: '', round: 0 };
+  let totalBurns = 0;
+  for (let r = 1; r <= numSteps; r++) {
+    const step = progression[r];
+    totalBurns += (step.burned || []).length;
+    players.forEach((name, pi) => {
+      if (step.deltas[pi] > maxSingleWin.delta) {
+        maxSingleWin = { delta: step.deltas[pi], player: name, round: r };
+      }
+    });
+  }
+
+  const statsPillHtml = `
+    <div class="flex items-center justify-between text-[10.5px] px-1 pb-1.5 mb-1.5 border-b border-white/10 select-none">
+      <div class="flex items-center gap-1 text-[var(--muted-foreground)]">
+        <span>💥</span>
+        <span>${currentLang === 'id' ? 'Skor Ronde Tertinggi:' : 'Max Round Win:'}</span>
+        <span class="text-emerald-400 font-bold font-mono">+${maxSingleWin.delta}</span>
+        <span class="text-white font-medium truncate max-w-[80px]">(${esc(maxSingleWin.player || '-')})</span>
+      </div>
+      <div class="flex items-center gap-1 text-[var(--muted-foreground)]">
+        <span>🔥</span>
+        <span>${currentLang === 'id' ? 'Kebakar:' : 'Burned:'}</span>
+        <span class="text-amber-400 font-bold font-mono">${totalBurns}x</span>
+      </div>
+    </div>
+  `;
+
+  let headerCols = '';
+  for (let r = 1; r <= numSteps; r++) {
+    const isSelected = (r === roundIdx);
+    headerCols += `
+      <th onclick="selectChartRound(${r})"
+        class="py-1 px-1.5 text-center font-mono text-[10px] cursor-pointer transition-all select-none min-w-[42px] ${
+          isSelected
+            ? 'text-amber-300 font-bold bg-amber-500/20 rounded-t-lg border-t border-x border-amber-500/40'
+            : 'text-slate-400 hover:text-white hover:bg-white/5'
+        }">
+        R${r}
+      </th>
+    `;
+  }
+
+  const isFilterActive = (selectedPlayerChartFilters && selectedPlayerChartFilters.length > 0);
+
+  let bodyRows = players.map((name, pi) => {
+    const color = CHART_COLORS[pi % CHART_COLORS.length];
+    const curTotal = progression[roundIdx].totals[pi];
+    const isSelected = isFilterActive ? selectedPlayerChartFilters.includes(pi) : true;
+
+    let rowCells = '';
+    for (let r = 1; r <= numSteps; r++) {
+      const step = progression[r];
+      const delta = step.deltas[pi];
+      const isBurned = step.burned.includes(pi);
+      const isCurRound = (r === roundIdx);
+
+      let cellStyle = 'bg-white/[0.02] text-slate-400 border border-white/5';
+      let content = fmtScore(delta);
+
+      if (isBurned) {
+        cellStyle = 'bg-red-500/30 text-amber-300 font-bold border border-red-500/50 shadow-sm';
+        content = `🔥 ${fmtScore(delta)}`;
+      } else if (delta >= 200) {
+        cellStyle = 'bg-emerald-500/30 text-emerald-200 font-extrabold border border-emerald-400/50';
+      } else if (delta > 0) {
+        cellStyle = 'bg-emerald-950/40 text-emerald-400 font-semibold border border-emerald-500/20';
+      } else if (delta < 0) {
+        cellStyle = 'bg-rose-950/40 text-rose-400 font-semibold border border-rose-500/20';
+      } else {
+        cellStyle = 'bg-white/[0.01] text-slate-500 text-[9.5px] border border-transparent';
+      }
+
+      if (isCurRound) {
+        cellStyle += ' ring-2 ring-amber-400/80 scale-[1.03] z-10';
+      }
+
+      rowCells += `
+        <td onclick="selectChartRound(${r})"
+          class="p-0.5 text-center cursor-pointer min-w-[42px] transition-all">
+          <div class="py-1 px-1 rounded-md text-[10px] font-mono leading-tight ${cellStyle}">
+            ${content}
+          </div>
+        </td>
+      `;
+    }
+
+    return `
+      <tr class="${isFilterActive && !isSelected ? 'opacity-30' : 'opacity-100'} transition-opacity">
+        <td onclick="togglePlayerChartFilter(${pi})"
+          class="sticky left-0 z-20 bg-[var(--card)] py-1 pr-2 pl-0.5 border-r border-white/10 cursor-pointer select-none">
+          <div class="flex items-center justify-between gap-1 w-[90px]">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${color}"></span>
+              <span class="text-[11px] font-bold text-white truncate">${esc(name)}</span>
+            </div>
+            <span class="font-digital font-bold text-[11px] shrink-0 ${scoreColor(curTotal)}">${fmtScore(curTotal)}</span>
+          </div>
+        </td>
+        ${rowCells}
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="w-full flex flex-col justify-center overflow-hidden">
+      ${statsPillHtml}
+      <div id="heatmap-scroll-container" class="w-full overflow-x-auto pb-1 max-h-[160px] scrollbar-thin">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr>
+              <th class="sticky left-0 z-30 bg-[var(--card)] py-1 pr-2 pl-0.5 border-r border-white/10 text-left text-[10px] font-semibold text-slate-400 w-[90px]">
+                ${currentLang === 'id' ? 'Pemain' : 'Player'}
+              </th>
+              ${headerCols}
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    const scrollContainer = document.getElementById('heatmap-scroll-container');
+    if (scrollContainer && roundIdx > 2) {
+      const scrollPos = (roundIdx - 2) * 44;
+      scrollContainer.scrollLeft = scrollPos;
+    }
+  }, 10);
 }
 
 function renderChartSnapshot(progression, roundIdx) {
@@ -3986,12 +4503,12 @@ function renderChartSnapshot(progression, roundIdx) {
   // Top header of snapshot
   const filterResetBtn = isFilterActive
     ? `<div class="flex items-center gap-1.5 shrink-0">
-         <span class="text-[9.5px] text-amber-300 font-bold bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md leading-tight">${activeCount}/${totalPlayers} ${currentLang === 'id' ? 'Garis' : 'Lines'}</span>
+         <span class="text-[9.5px] text-amber-300 font-bold bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md leading-tight">${activeCount}/${totalPlayers} ${currentLang === 'id' ? 'Pemain' : 'Players'}</span>
          <button onclick="resetPlayerChartFilter()" class="text-[10px] text-amber-300 hover:text-white font-bold underline flex items-center gap-0.5 transition-colors">
            <span>${currentLang === 'id' ? 'Semua' : 'All'}</span> <span>↺</span>
          </button>
        </div>`
-    : `<span class="text-[10px] text-slate-400 italic">${currentLang === 'id' ? 'Ketuk pemain untuk pilih garis (bisa multi)' : 'Tap players to select lines'}</span>`;
+    : `<span class="text-[10px] text-slate-400 italic">${currentLang === 'id' ? 'Ketuk pemain untuk filter (bisa multi)' : 'Tap player to filter (multi)'}</span>`;
 
   snapshotEl.innerHTML = `
     <div class="flex items-center justify-between border-b border-amber-500/20 pb-1.5 mb-2 gap-2">
