@@ -771,10 +771,13 @@
     
     <!-- 3D Casino Chips -->
     <div class="grid grid-cols-4 gap-2 mb-2">
-      <button onclick="setScore(25)"  class="chip-btn bg-gradient-to-b from-emerald-400 to-emerald-700 text-white text-xs py-2 border border-emerald-300 shadow">+25</button>
-      <button onclick="setScore(50)"  class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow">+50</button>
-      <button onclick="setScore(75)"  class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
-      <button onclick="setScore(100)" class="chip-btn bg-gradient-to-b from-purple-400 to-purple-700 text-white text-xs py-2 border border-purple-300 shadow">+100</button>
+      <button type="button" onclick="setScore(0)" class="chip-btn bg-gradient-to-b from-slate-500 to-slate-700 text-white text-xs py-2 border border-slate-400 shadow font-black">0</button>
+      <button type="button" onclick="setScore(50)" class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow font-black">+50</button>
+      <button type="button" onclick="setScore(75)" class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
+      <button type="button" onclick="setScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-1.5 px-0.5 border border-purple-300 shadow flex flex-col items-center justify-center leading-tight">
+        <span class="text-[8px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
+        <span class="text-[9px] text-amber-300 font-black font-digital">+250</span>
+      </button>
     </div>
     <div class="grid grid-cols-4 gap-2 mb-4">
       <button onclick="setScore(-25)"  class="chip-btn bg-gradient-to-b from-rose-600 to-red-900 text-white text-xs py-2 border border-rose-400 shadow">-25</button>
@@ -810,10 +813,13 @@
     <p data-i18n="modal_edit_chips_hint" class="text-[11px] text-[var(--muted-foreground)] mb-3 text-center">Tap chips below to adjust points:</p>
     
     <div class="grid grid-cols-4 gap-2 mb-2">
-      <button onclick="setEditScore(25)"  class="chip-btn bg-gradient-to-b from-emerald-400 to-emerald-700 text-white text-xs py-2 border border-emerald-300 shadow">+25</button>
-      <button onclick="setEditScore(50)"  class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow">+50</button>
-      <button onclick="setEditScore(75)"  class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
-      <button onclick="setEditScore(100)" class="chip-btn bg-gradient-to-b from-purple-400 to-purple-700 text-white text-xs py-2 border border-purple-300 shadow">+100</button>
+      <button type="button" onclick="setEditScore(0)" class="chip-btn bg-gradient-to-b from-slate-500 to-slate-700 text-white text-xs py-2 border border-slate-400 shadow font-black">0</button>
+      <button type="button" onclick="setEditScore(50)" class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow font-black">+50</button>
+      <button type="button" onclick="setEditScore(75)" class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
+      <button type="button" onclick="setEditScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-1.5 px-0.5 border border-purple-300 shadow flex flex-col items-center justify-center leading-tight">
+        <span class="text-[8px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
+        <span class="text-[9px] text-amber-300 font-black font-digital">+250</span>
+      </button>
     </div>
     <div class="grid grid-cols-4 gap-2 mb-4">
       <button onclick="setEditScore(-25)"  class="chip-btn bg-gradient-to-b from-rose-600 to-red-900 text-white text-xs py-2 border border-rose-400 shadow">-25</button>
@@ -1043,8 +1049,9 @@ const translations = {
     modal_score_title_classic: "Enter Score",
     modal_score_points: "POINTS THIS ROUND",
     modal_score_points_classic: "Score This Round",
-    modal_score_chips_hint: "Tap chips below for quick score:",
-    modal_score_chips_hint_classic: "Positive = win, Negative = loss",
+    modal_score_chips_hint: "Tap chip to submit instantly, or type custom score:",
+    modal_score_chips_hint_classic: "Tap chip to submit instantly, or type custom score",
+    chip_tutup_tangan: "CLOSED HAND",
     modal_btn_cancel: "Cancel",
     modal_btn_submit_score: "SPIN / SAVE 🎰",
     modal_btn_submit_score_classic: "Save",
@@ -1054,8 +1061,8 @@ const translations = {
     modal_edit_title_classic: "Edit Score",
     modal_edit_points: "REVISED POINTS",
     modal_edit_points_classic: "Score This Round",
-    modal_edit_chips_hint: "Tap chips below to adjust points:",
-    modal_edit_chips_hint_classic: "Positive = win, Negative = loss",
+    modal_edit_chips_hint: "Tap chip to update instantly, or type custom score:",
+    modal_edit_chips_hint_classic: "Tap chip to update instantly, or type custom score",
     modal_btn_save_edit: "SAVE REVISION 🎰",
     modal_btn_save_edit_classic: "Save",
 
@@ -1131,7 +1138,8 @@ const translations = {
     toast_session_reopened: 'Table "{name}" reopened.',
     toast_lang_changed: "Language: English",
     toast_theme_changed: "Theme: {name}",
-    toast_burned: "🔥 {name} BURNED! Score reset to 0!"
+    toast_burned: "🔥 {name} BURNED! Score reset to 0!",
+    toast_tutup_tangan: "🎴 {name} CLOSED HAND! (+250 pts, other players 0)"
   },
   id: {
     app_title: "ESBE188 VIP - Tracker Skor Ceki",
@@ -1253,8 +1261,9 @@ const translations = {
     modal_score_title_classic: "Input Skor",
     modal_score_points: "POIN PUTARAN INI",
     modal_score_points_classic: "Skor Putaran Ini",
-    modal_score_chips_hint: "Tekan chip di bawah untuk mengisi poin cepat:",
-    modal_score_chips_hint_classic: "Positif = menang, Negatif = kalah",
+    modal_score_chips_hint: "Ketuk chip untuk simpan instan, atau ketik skor manual:",
+    modal_score_chips_hint_classic: "Ketuk chip untuk simpan instan, atau ketik skor manual",
+    chip_tutup_tangan: "TUTUP TANGAN",
     modal_btn_cancel: "Batal",
     modal_btn_submit_score: "SPIN / SIMPAN 🎰",
     modal_btn_submit_score_classic: "Simpan",
@@ -1264,8 +1273,8 @@ const translations = {
     modal_edit_title_classic: "Edit Skor",
     modal_edit_points: "POIN REVISI",
     modal_edit_points_classic: "Skor Putaran Ini",
-    modal_edit_chips_hint: "Tekan chip di bawah untuk mengubah poin:",
-    modal_edit_chips_hint_classic: "Positif = menang, Negatif = kalah",
+    modal_edit_chips_hint: "Ketuk chip untuk ubah instan, atau ketik skor manual:",
+    modal_edit_chips_hint_classic: "Ketuk chip untuk ubah instan, atau ketik skor manual",
     modal_btn_save_edit: "SIMPAN REVISI 🎰",
     modal_btn_save_edit_classic: "Simpan",
 
@@ -1341,7 +1350,8 @@ const translations = {
     toast_session_reopened: 'Meja "{name}" dibuka kembali.',
     toast_lang_changed: "Bahasa: Indonesia",
     toast_theme_changed: "Tema: {name}",
-    toast_burned: "🔥 {name} KEBAKAR! Skor kembali ke 0!"
+    toast_burned: "🔥 {name} KEBAKAR! Skor kembali ke 0!",
+    toast_tutup_tangan: "🎴 {name} TUTUP TANGAN! (+250 poin, pemain lain 0)"
   }
 };
 
@@ -2771,10 +2781,13 @@ function toggleHistory() {
 }
 
 // ── Edit Score / Delete Round ─────────────────────────────
+let isEditTutupTanganSelected = false;
+
 function openEditScoreModal(roundId, roundIdx, playerIdx, currentScore) {
   if (isSessionClosed(activeSession)) return;
   editRoundId   = roundId;
   editPlayerIdx = playerIdx;
+  isEditTutupTanganSelected = false;
   const roundWord = currentLang === 'id' ? 'Putaran' : 'Round';
   document.getElementById('modal-edit-subtitle').textContent = `${roundWord} ${roundIdx} · ${activeSession.players[playerIdx]}`;
   document.getElementById('modal-edit-player-name').textContent = activeSession.players[playerIdx];
@@ -2792,10 +2805,13 @@ function closeEditScoreModal() {
   hide('modal-edit-score');
   editRoundId = null;
   editPlayerIdx = null;
+  isEditTutupTanganSelected = false;
 }
 
-function setEditScore(v) {
+function setEditScore(v, isTutup = false) {
   document.getElementById('modal-edit-score-input').value = v;
+  isEditTutupTanganSelected = isTutup;
+  saveEditedScore();
 }
 
 async function saveEditedScore() {
@@ -2810,6 +2826,8 @@ async function saveEditedScore() {
   const score = parseInt(raw, 10);
   if (isNaN(score)) { showErr(errEl, t('err_score_number')); return; }
   errEl.classList.add('hidden');
+
+  const isTutup = isEditTutupTanganSelected && score === 250;
 
   closeEditScoreModal();
   showLoading(currentLang === 'id' ? 'Menyimpan...' : 'Updating score...');
@@ -2827,9 +2845,17 @@ async function saveEditedScore() {
     if (!targetRound) throw new Error('Round not found');
 
     const oldScore = (targetRound.scores || {})[targetPlayerIdx] ?? 0;
-    const updatedScores = { ...(targetRound.scores || {}), [targetPlayerIdx]: score };
+    let updatedScores = {};
+    if (isTutup) {
+      activeSession.players.forEach((_, i) => {
+        updatedScores[i] = (i === targetPlayerIdx ? 250 : 0);
+      });
+    } else {
+      updatedScores = { ...(targetRound.scores || {}), [targetPlayerIdx]: score };
+    }
+
     const { data, error } = await db.from('rounds')
-      .update({ scores: updatedScores })
+      .update({ scores: updatedScores, is_complete: isTutup ? true : targetRound.is_complete })
       .eq('id', targetId)
       .select().single();
 
@@ -2845,7 +2871,11 @@ async function saveEditedScore() {
     allSessionsRoundsMap[activeSessionId] = activeRounds;
     updateTickerWithWallOfShame();
 
-    showToast(t('toast_score_updated'), 'success');
+    if (isTutup) {
+      showToast(t('toast_tutup_tangan', { name: activeSession.players[targetPlayerIdx] }), 'success');
+    } else {
+      showToast(t('toast_score_updated'), 'success');
+    }
 
     // Audit logging
     logAuditAction({
@@ -2860,7 +2890,10 @@ async function saveEditedScore() {
       details: {
         round_id: targetId,
         player_index: targetPlayerIdx,
-        description: `Edited score for ${activeSession.players[targetPlayerIdx]} in Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1}) from ${fmtScore(oldScore)} to ${fmtScore(score)}`
+        is_tutup_tangan: isTutup,
+        description: isTutup
+          ? `Edited Round ${targetRound.round_number || ''} to Tutup Tangan (Closed Hand) for ${activeSession.players[targetPlayerIdx]} (+250 pts, others 0)`
+          : `Edited score for ${activeSession.players[targetPlayerIdx]} in Round ${targetRound.round_number || ''} (Phase ${targetRound.phase ?? 1}) from ${fmtScore(oldScore)} to ${fmtScore(score)}`
       }
     });
 
@@ -2885,6 +2918,7 @@ async function saveEditedScore() {
     showToast('Failed to update: ' + err.message);
   } finally {
     hideLoading();
+    isEditTutupTanganSelected = false;
   }
 }
 
@@ -2948,17 +2982,28 @@ async function executeDeleteRound() {
 }
 
 // ── Score Modal ───────────────────────────────────────────
+let isTutupTanganSelected = false;
+
 function openModal(playerIdx) {
   if (isSessionClosed(activeSession)) return;
   modalPlayerIdx = playerIdx;
+  isTutupTanganSelected = false;
   document.getElementById('modal-player-name').textContent = activeSession.players[playerIdx];
   document.getElementById('modal-score-input').value = '';
   document.getElementById('modal-error').classList.add('hidden');
   show('modal-score');
   setTimeout(() => document.getElementById('modal-score-input').focus(), 100);
 }
-function closeModal() { hide('modal-score'); modalPlayerIdx = null; }
-function setScore(v)  { document.getElementById('modal-score-input').value = v; }
+function closeModal() {
+  hide('modal-score');
+  modalPlayerIdx = null;
+  isTutupTanganSelected = false;
+}
+function setScore(v, isTutup = false) {
+  document.getElementById('modal-score-input').value = v;
+  isTutupTanganSelected = isTutup;
+  submitScore();
+}
 
 async function submitScore() {
   if (isSessionClosed(activeSession)) return;
@@ -2973,16 +3018,31 @@ async function submitScore() {
   const scoringPhase = getScoringPhase(activeSession, activeRounds);
   const pendingRound = activeRounds.find(r => !r.is_complete && (r.phase ?? 1) === scoringPhase);
   const roundNum     = activeRounds.filter(r => r.is_complete && (r.phase ?? 1) === scoringPhase).length + 1;
+  const isTutup      = isTutupTanganSelected && score === 250;
 
   closeModal();
   showLoading(currentLang === 'id' ? 'Menyimpan...' : 'Saving...');
 
   try {
+    let finalScores = {};
+    let isComplete = false;
+
+    if (isTutup) {
+      activeSession.players.forEach((_, i) => {
+        finalScores[i] = (i === pi ? 250 : 0);
+      });
+      isComplete = true;
+    } else if (pendingRound) {
+      finalScores = { ...pendingRound.scores, [pi]: score };
+      isComplete = activeSession.players.every((_, i) => finalScores[i] != null);
+    } else {
+      finalScores = { [pi]: score };
+      isComplete = false;
+    }
+
     if (pendingRound) {
-      const newScores = { ...pendingRound.scores, [pi]: score };
-      const allFilled = activeSession.players.every((_, i) => newScores[i] != null);
       const { data, error } = await db.from('rounds')
-        .update({ scores: newScores, is_complete: allFilled })
+        .update({ scores: finalScores, is_complete: isComplete })
         .eq('id', pendingRound.id).select().single();
       if (!error && data) {
         const idx = activeRounds.findIndex(r => r.id === pendingRound.id);
@@ -2993,13 +3053,13 @@ async function submitScore() {
       }
     } else {
       let ins = await db.from('rounds').insert({
-        session_id: activeSessionId, scores: { [pi]: score },
-        round_number: roundNum, is_complete: false, phase: scoringPhase
+        session_id: activeSessionId, scores: finalScores,
+        round_number: roundNum, is_complete: isComplete, phase: scoringPhase
       }).select().single();
       if (ins.error && ins.error.message && (ins.error.message.includes('phase') || ins.error.code === '42703')) {
         ins = await db.from('rounds').insert({
-          session_id: activeSessionId, scores: { [pi]: score },
-          round_number: roundNum, is_complete: false
+          session_id: activeSessionId, scores: finalScores,
+          round_number: roundNum, is_complete: isComplete
         }).select().single();
       }
       if (!ins.error && ins.data) {
@@ -3027,9 +3087,16 @@ async function submitScore() {
       new_score: score,
       details: {
         player_index: pi,
-        description: `Entered score for ${playerName} in Round ${targetRoundNum} (Phase ${scoringPhase}): ${fmtScore(score)}`
+        is_tutup_tangan: isTutup,
+        description: isTutup
+          ? `Tutup Tangan (Closed Hand) by ${playerName} in Round ${targetRoundNum} (+250 pts, other players 0)`
+          : `Entered score for ${playerName} in Round ${targetRoundNum} (Phase ${scoringPhase}): ${fmtScore(score)}`
       }
     });
+
+    if (isTutup) {
+      showToast(t('toast_tutup_tangan', { name: playerName }), 'success');
+    }
 
     // Check if anyone burned in this round
     const targetRoundId = pendingRound ? pendingRound.id : (activeRounds[activeRounds.length - 1]?.id);
@@ -3054,6 +3121,7 @@ async function submitScore() {
     showToast('Error: ' + err.message);
   } finally {
     hideLoading();
+    isTutupTanganSelected = false;
   }
 }
 
