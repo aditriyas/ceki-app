@@ -774,9 +774,8 @@
       <button type="button" onclick="setScore(0)" class="chip-btn bg-gradient-to-b from-slate-500 to-slate-700 text-white text-xs py-2 border border-slate-400 shadow font-black">0</button>
       <button type="button" onclick="setScore(50)" class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow font-black">+50</button>
       <button type="button" onclick="setScore(75)" class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
-      <button type="button" onclick="setScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-1.5 px-0.5 border border-purple-300 shadow flex flex-col items-center justify-center leading-tight">
-        <span class="text-[8px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
-        <span class="text-[9px] text-amber-300 font-black font-digital">+250</span>
+      <button type="button" onclick="setScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-2 px-1 border border-purple-300 shadow flex items-center justify-center text-center">
+        <span class="text-[8.5px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
       </button>
     </div>
     <div class="grid grid-cols-4 gap-2 mb-4">
@@ -816,9 +815,8 @@
       <button type="button" onclick="setEditScore(0)" class="chip-btn bg-gradient-to-b from-slate-500 to-slate-700 text-white text-xs py-2 border border-slate-400 shadow font-black">0</button>
       <button type="button" onclick="setEditScore(50)" class="chip-btn bg-gradient-to-b from-blue-400 to-blue-700 text-white text-xs py-2 border border-blue-300 shadow font-black">+50</button>
       <button type="button" onclick="setEditScore(75)" class="chip-btn bg-gradient-to-b from-amber-400 to-amber-700 text-black text-xs py-2 border border-yellow-200 font-black shadow">+75</button>
-      <button type="button" onclick="setEditScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-1.5 px-0.5 border border-purple-300 shadow flex flex-col items-center justify-center leading-tight">
-        <span class="text-[8px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
-        <span class="text-[9px] text-amber-300 font-black font-digital">+250</span>
+      <button type="button" onclick="setEditScore(250, true)" class="chip-btn bg-gradient-to-b from-purple-500 via-purple-700 to-indigo-950 text-white py-2 px-1 border border-purple-300 shadow flex items-center justify-center text-center">
+        <span class="text-[8.5px] font-black tracking-tight" data-i18n="chip_tutup_tangan">TUTUP TANGAN</span>
       </button>
     </div>
     <div class="grid grid-cols-4 gap-2 mb-4">
@@ -2002,8 +2000,7 @@ function showSetup(push = true) {
   updateNavActiveState('setup');
   const backBtn = document.getElementById('btn-setup-back');
   if (backBtn) {
-    if (allSessions.length > 0) backBtn.classList.remove('hidden');
-    else backBtn.classList.add('hidden');
+    backBtn.classList.remove('hidden');
   }
   renderSavedSessionsMini();
   updateTargetScoreUI();
@@ -2022,8 +2019,7 @@ function goBack() {
   if (window.history.length > 1 && window.location.hash) {
     window.history.back();
   } else {
-    if (allSessions.length > 0) showSessionsScreen();
-    else showSetup();
+    showSessionsScreen();
   }
 }
 
@@ -2035,7 +2031,7 @@ async function init() {
     showLoading('Connecting...');
     const { data, error } = await db.from('sessions').select('*').order('created_at', { ascending: false });
     hideLoading();
-    if (error) { showToast('Could not connect to database'); showSetup(false); return; }
+    if (error) { showToast('Could not connect to database'); showSessionsScreen(false); return; }
     allSessions = data || [];
     
     if (allSessions.length > 0) {
@@ -2053,13 +2049,14 @@ async function init() {
       }
     }
     updateTickerWithWallOfShame();
+    const hash = window.location.hash || '';
     if (hash.startsWith('#audit')) {
       const filterId = hash.replace('#audit-', '');
       await showAuditScreen(filterId === '#audit' ? null : filterId, false);
     } else if (hash.startsWith('#game-')) {
       const id = hash.replace('#game-', '');
       await openSession(id, false);
-    } else if (hash === '#setup' || allSessions.length === 0) {
+    } else if (hash === '#setup') {
       showSetup(false);
     } else {
       showSessionsScreen(false);
@@ -2067,13 +2064,13 @@ async function init() {
   } catch (err) {
     console.error('init error:', err);
     hideLoading();
-    showSetup(false);
+    showSessionsScreen(false);
   }
 }
 
 // Handle Browser Back & Forward buttons
 window.addEventListener('popstate', () => {
-  const hash = window.location.hash;
+  const hash = window.location.hash || '';
   if (hash.startsWith('#audit')) {
     const filterId = hash.replace('#audit-', '');
     showAuditScreen(filterId === '#audit' ? null : filterId, false);
@@ -2085,11 +2082,7 @@ window.addEventListener('popstate', () => {
   } else if (hash === '#setup') {
     showSetup(false);
   } else {
-    if (allSessions.length > 0) {
-      showSessionsScreen(false);
-    } else {
-      showSetup(false);
-    }
+    showSessionsScreen(false);
   }
 });
 
@@ -2486,8 +2479,7 @@ async function openSession(id, push = true) {
     hideLoading();
     if (e1 || e2 || !session) {
       showToast('Failed to load session');
-      if (allSessions.length > 0) showSessionsScreen(false);
-      else showSetup(false);
+      showSessionsScreen(false);
       return;
     }
     activeSession = session;
@@ -2502,8 +2494,7 @@ async function openSession(id, push = true) {
     console.error('openSession error:', err);
     hideLoading();
     showToast('Failed to load session');
-    if (allSessions.length > 0) showSessionsScreen(false);
-    else showSetup(false);
+    showSessionsScreen(false);
   }
 }
 
@@ -3274,11 +3265,7 @@ async function deleteSession() {
   }
   closeConfirm();
   showToast(t('toast_session_deleted', { name: targetName }), 'success');
-  if (allSessions.length > 0) {
-    showSessionsScreen();
-  } else {
-    showSetup();
-  }
+  showSessionsScreen();
 }
 
 // ── Audit & Activity Logging ──────────────────────────────
