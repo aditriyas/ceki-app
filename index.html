@@ -140,6 +140,57 @@
       animation: pulse-gold 2.5s infinite;
     }
 
+    /* Zeus Lightning FX (Gates of Olympus Slot Style) */
+    @keyframes zeus-screen-shake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      20% { transform: translate(-5px, 5px) rotate(-1deg); }
+      40% { transform: translate(5px, -4px) rotate(1deg); }
+      60% { transform: translate(-4px, 3px) rotate(-0.5deg); }
+      80% { transform: translate(4px, -2px) rotate(0.5deg); }
+    }
+    .zeus-shake {
+      animation: zeus-screen-shake 0.4s ease-in-out;
+    }
+
+    @keyframes zeus-electric-glow {
+      0%, 100% {
+        box-shadow: 0 0 25px rgba(250, 204, 21, 0.6), 0 0 55px rgba(56, 189, 248, 0.45), inset 0 0 20px rgba(250, 204, 21, 0.3);
+        border-color: #facc15;
+      }
+      33% {
+        box-shadow: 0 0 45px rgba(56, 189, 248, 0.9), 0 0 85px rgba(168, 85, 247, 0.6), inset 0 0 30px rgba(56, 189, 248, 0.5);
+        border-color: #38bdf8;
+      }
+      66% {
+        box-shadow: 0 0 65px rgba(250, 204, 21, 1), 0 0 110px rgba(245, 158, 11, 0.8), inset 0 0 40px rgba(250, 204, 21, 0.6);
+        border-color: #ffffff;
+      }
+    }
+    .zeus-electric-border {
+      animation: zeus-electric-glow 0.8s infinite alternate ease-in-out !important;
+    }
+
+    @keyframes zeus-flash-anim {
+      0%   { opacity: 0; }
+      12%  { opacity: 0.9; }
+      24%  { opacity: 0.2; }
+      36%  { opacity: 0.95; }
+      55%  { opacity: 0.15; }
+      75%  { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+    .zeus-flash-active {
+      animation: zeus-flash-anim 0.85s ease-out forwards;
+    }
+
+    @keyframes zeus-float-bounce {
+      0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 16px #fde047); }
+      50%      { transform: translateY(-7px) scale(1.08); filter: drop-shadow(0 0 32px #38bdf8); }
+    }
+    .zeus-floating {
+      animation: zeus-float-bounce 1.8s ease-in-out infinite;
+    }
+
     html.light .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
     html.dark_classic .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
     html.casino .card-hover:hover, html:not(.light):not(.dark_classic) .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.6); }
@@ -847,11 +898,31 @@
   </div>
 </div>
 
-<!-- RT / New Phase Modal (Sensational 1000 Poin) -->
-<div id="modal-rt" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/80 backdrop-blur-md">
+<!-- Zeus Lightning FX Overlays -->
+<div id="zeus-flash" class="hidden pointer-events-none fixed inset-0 z-[55] bg-gradient-to-b from-cyan-100/50 via-amber-200/40 to-white/70 mix-blend-screen transition-opacity"></div>
+<canvas id="zeus-canvas" class="hidden pointer-events-none fixed inset-0 z-[60] w-full h-full"></canvas>
+
+<!-- RT / New Phase Modal (Sensational Target Poin) -->
+<div id="modal-rt" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-black/85 backdrop-blur-md">
   <div class="bg-gradient-to-b from-[#1e1330] via-[#140b22] to-[#0a0612] border-2 border-amber-400 rounded-3xl p-6 w-full max-w-xs shadow-2xl anim-in text-center relative overflow-hidden pulse-gold">
-    <div class="text-5xl mb-2 animate-bounce">🎰</div>
-    <h3 data-i18n="modal_rt_sensational" class="font-casino font-black text-2xl gold-text tracking-wider uppercase mb-1">SENSATIONAL!</h3>
+    
+    <!-- Zeus Mascot & Gates of Olympus Style Multiplier Banner -->
+    <div class="mb-2 relative inline-block cursor-pointer select-none group" onclick="triggerZeusLightning()" title="⚡ Tap to summon Zeus Lightning!">
+      <div class="zeus-floating text-5xl filter drop-shadow-[0_0_18px_#fde047] transition-transform active:scale-90">
+        👴⚡
+      </div>
+      <div class="absolute -top-1 -right-4 bg-gradient-to-r from-red-600 via-amber-500 to-yellow-400 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow-lg border border-yellow-200 animate-pulse flex items-center gap-0.5">
+        <span>⚡</span><span>x500</span>
+      </div>
+    </div>
+
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-400/40 rounded-full mb-1">
+      <span class="text-xs">⚡</span>
+      <span class="text-[10px] font-black uppercase tracking-widest text-amber-300">ZEUS SENSATIONAL STRIKE</span>
+      <span class="text-xs">⚡</span>
+    </div>
+
+    <h3 data-i18n="modal_rt_sensational" class="font-casino font-black text-2xl gold-text tracking-wider uppercase mb-1 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]">SENSATIONAL!</h3>
     <p id="rt-modal-hit-title" class="text-xs font-bold text-amber-300 tracking-widest uppercase mb-4">SCORE HIT TARGET POINTS!</p>
 
     <!-- Who hit target -->
@@ -2607,6 +2678,7 @@ function renderGame() {
     const isCalon   = hasScoreDiff && totals[i] === minTotal;
     const isFirst   = hasScoreDiff && totals[i] === maxTotal;
     const isBurned  = latestBurned.includes(i);
+    const isNearTarget = !isClosed && totals[i] >= (targetScore - 100) && totals[i] < targetScore;
     const bgGrad    = isCasino ? `bg-gradient-to-b ${colors[i]} to-transparent` : '';
     const borderGlow = (isFirst && isCasino) ? 'border-amber-500/50 shadow-amber-500/10 shadow-lg' : '';
     const clickHandler = isClosed ? '' : (submitted ? '' : `openModal(${i})`);
@@ -2621,9 +2693,10 @@ function renderGame() {
             ${esc(name.charAt(0).toUpperCase())}
           </div>
           <p class="font-semibold text-sm truncate">${esc(name)}</p>
-          ${(isFirst || isRT || isCalon || isBurned) ? `
+          ${(isFirst || isRT || isCalon || isBurned || isNearTarget) ? `
           <div class="flex items-center justify-center gap-1 my-1 min-h-[16px] flex-wrap">
             ${isFirst ? `<span class="odoo-tag tag-winning">${t('badge_gacor')}</span>` : ''}
+            ${isNearTarget ? `<span class="odoo-tag bg-amber-400/20 text-amber-300 border border-amber-400/50 animate-pulse font-bold">⚡ ${currentLang === 'id' ? 'MAU TEMBUS' : 'NEAR TARGET'}</span>` : ''}
             ${isRT    ? `<span class="odoo-tag tag-rt">${t('badge_pak_rt')}</span>` : ''}
             ${isCalon ? `<span class="odoo-tag tag-calon">${t('badge_calon_rt')}</span>` : ''}
             ${isBurned ? `<span class="odoo-tag tag-rt animate-pulse">🔥 ${t('badge_burned')}</span>` : ''}
@@ -3114,6 +3187,358 @@ async function submitScore() {
   }
 }
 
+// ── Zeus Lightning & Thunder Engine (Gates of Olympus Slot Style) ──
+let zeusAudioCtx = null;
+let zeusAnimFrame = null;
+let zeusActiveStrikes = [];
+let zeusParticles = [];
+
+function getZeusAudioContext() {
+  if (!zeusAudioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) zeusAudioCtx = new AudioCtx();
+  }
+  if (zeusAudioCtx && zeusAudioCtx.state === 'suspended') {
+    zeusAudioCtx.resume().catch(() => {});
+  }
+  return zeusAudioCtx;
+}
+
+// Unlock audio context on any user tap
+document.addEventListener('pointerdown', () => {
+  try {
+    getZeusAudioContext();
+  } catch (e) {}
+}, { passive: true });
+
+function playZeusThunderSound() {
+  try {
+    const ctx = getZeusAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // 1. Initial sharp electric crackle / zap
+    const zapLen = Math.floor(ctx.sampleRate * 0.35);
+    const zapBuf = ctx.createBuffer(1, zapLen, ctx.sampleRate);
+    const zapData = zapBuf.getChannelData(0);
+    for (let i = 0; i < zapLen; i++) {
+      zapData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
+    }
+    const zapSource = ctx.createBufferSource();
+    zapSource.buffer = zapBuf;
+
+    const zapFilter = ctx.createBiquadFilter();
+    zapFilter.type = 'bandpass';
+    zapFilter.frequency.setValueAtTime(2400, now);
+    zapFilter.Q.setValueAtTime(2.2, now);
+
+    const zapGain = ctx.createGain();
+    zapGain.gain.setValueAtTime(1.0, now);
+    zapGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+    zapSource.connect(zapFilter);
+    zapFilter.connect(zapGain);
+    zapGain.connect(ctx.destination);
+    zapSource.start(now);
+
+    // 2. Rolling deep thunder rumble (Brownian noise)
+    const rumbleLen = Math.floor(ctx.sampleRate * 2.8);
+    const rumbleBuf = ctx.createBuffer(1, rumbleLen, ctx.sampleRate);
+    const rumbleData = rumbleBuf.getChannelData(0);
+    let lastRumble = 0;
+    for (let i = 0; i < rumbleLen; i++) {
+      const white = Math.random() * 2 - 1;
+      rumbleData[i] = (lastRumble + (0.025 * white)) / 1.025;
+      lastRumble = rumbleData[i];
+      rumbleData[i] *= 4.0;
+    }
+    const rumbleSource = ctx.createBufferSource();
+    rumbleSource.buffer = rumbleBuf;
+
+    const rumbleFilter = ctx.createBiquadFilter();
+    rumbleFilter.type = 'lowpass';
+    rumbleFilter.frequency.setValueAtTime(340, now);
+    rumbleFilter.frequency.exponentialRampToValueAtTime(50, now + 2.5);
+
+    const rumbleGain = ctx.createGain();
+    rumbleGain.gain.setValueAtTime(0, now);
+    rumbleGain.gain.linearRampToValueAtTime(1.0, now + 0.04);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.45, now + 0.4);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.01, now + 2.4);
+    rumbleGain.gain.linearRampToValueAtTime(0, now + 2.8);
+
+    rumbleSource.connect(rumbleFilter);
+    rumbleFilter.connect(rumbleGain);
+    rumbleGain.connect(ctx.destination);
+    rumbleSource.start(now);
+
+    // 3. Sub-bass boom impact (808 drop)
+    const subOsc = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(150, now);
+    subOsc.frequency.exponentialRampToValueAtTime(26, now + 0.7);
+    subGain.gain.setValueAtTime(0.9, now);
+    subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.75);
+    subOsc.connect(subGain);
+    subGain.connect(ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + 0.8);
+
+    // 4. Secondary thunderclap crack at +200ms
+    setTimeout(() => {
+      try {
+        const now2 = ctx.currentTime;
+        const zap2 = ctx.createBufferSource();
+        zap2.buffer = zapBuf;
+        const f2 = ctx.createBiquadFilter();
+        f2.type = 'bandpass';
+        f2.frequency.setValueAtTime(1800, now2);
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.75, now2);
+        g2.gain.exponentialRampToValueAtTime(0.01, now2 + 0.25);
+        zap2.connect(f2);
+        f2.connect(g2);
+        g2.connect(ctx.destination);
+        zap2.start(now2);
+      } catch (e) {}
+    }, 200);
+
+    // 5. Third delayed rumble punch at +450ms
+    setTimeout(() => {
+      try {
+        const now3 = ctx.currentTime;
+        const osc3 = ctx.createOscillator();
+        const g3 = ctx.createGain();
+        osc3.type = 'sawtooth';
+        osc3.frequency.setValueAtTime(85, now3);
+        osc3.frequency.exponentialRampToValueAtTime(28, now3 + 0.6);
+        g3.gain.setValueAtTime(0.4, now3);
+        g3.gain.exponentialRampToValueAtTime(0.01, now3 + 0.65);
+        osc3.connect(g3);
+        g3.connect(ctx.destination);
+        osc3.start(now3);
+        osc3.stop(now3 + 0.7);
+      } catch (e) {}
+    }, 450);
+  } catch (err) {
+    console.warn('Zeus sound synthesis error:', err);
+  }
+}
+
+function generateLightningBolt(x1, y1, x2, y2, displace, branchChance = 0.35) {
+  const segments = [];
+  function subdivide(x1, y1, x2, y2, disp, d) {
+    if (disp < 6 || d > 6) {
+      segments.push({ x1, y1, x2, y2 });
+      return;
+    }
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const normal = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = -dy / normal;
+    const ny = dx / normal;
+    const offset = (Math.random() - 0.5) * disp * 2;
+    const cx = midX + nx * offset;
+    const cy = midY + ny * offset;
+
+    subdivide(x1, y1, cx, cy, disp * 0.55, d + 1);
+    subdivide(cx, cy, x2, y2, disp * 0.55, d + 1);
+
+    if (d < 3 && Math.random() < branchChance) {
+      const branchAngle = (Math.random() - 0.5) * 0.9;
+      const cosA = Math.cos(branchAngle);
+      const sinA = Math.sin(branchAngle);
+      const branchLength = (disp * 2.2) + (Math.random() * 25);
+      const bx = cx + (dx * cosA - dy * sinA) / normal * branchLength;
+      const by = cy + (dx * sinA + dy * cosA) / normal * branchLength;
+      subdivide(cx, cy, bx, by, disp * 0.45, d + 2);
+    }
+  }
+  subdivide(x1, y1, x2, y2, displace, 0);
+  return segments;
+}
+
+function spawnZeusSparks(x, y, count = 25) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 8;
+    zeusParticles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1.0,
+      decay: 0.025 + Math.random() * 0.035,
+      size: 2 + Math.random() * 3,
+      color: Math.random() > 0.4 ? '#fde047' : '#38bdf8'
+    });
+  }
+}
+
+function triggerZeusLightning() {
+  const canvas = document.getElementById('zeus-canvas');
+  const flash  = document.getElementById('zeus-flash');
+  const modalCard = document.querySelector('#modal-rt > div');
+  if (!canvas) return;
+
+  // Sound
+  playZeusThunderSound();
+
+  // Screen shake on modal card
+  if (modalCard) {
+    modalCard.classList.remove('zeus-shake');
+    modalCard.classList.add('zeus-electric-border');
+    void modalCard.offsetWidth;
+    modalCard.classList.add('zeus-shake');
+    setTimeout(() => {
+      if (modalCard) modalCard.classList.remove('zeus-shake');
+    }, 450);
+  }
+
+  // Screen flash
+  if (flash) {
+    flash.classList.remove('hidden', 'zeus-flash-active');
+    void flash.offsetWidth;
+    flash.classList.add('zeus-flash-active');
+    setTimeout(() => {
+      flash.classList.add('hidden');
+      flash.classList.remove('zeus-flash-active');
+    }, 850);
+  }
+
+  // Setup canvas
+  canvas.classList.remove('hidden');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  // Calculate center of modal card or screen center
+  let targetX = w / 2;
+  let targetY = h / 2;
+  if (modalCard) {
+    const rect = modalCard.getBoundingClientRect();
+    targetX = rect.left + rect.width / 2;
+    targetY = rect.top + rect.height * 0.25;
+  }
+
+  zeusActiveStrikes = [];
+  zeusParticles = [];
+
+  const scheduleStrike = (startX, startY, endX, endY, delay, intensity) => {
+    setTimeout(() => {
+      const segments = generateLightningBolt(startX, startY, endX, endY, Math.min(w, h) * 0.22);
+      zeusActiveStrikes.push({
+        segments,
+        life: 1.0,
+        decay: 0.08,
+        intensity,
+        colorCore: '#ffffff',
+        colorGlow1: intensity > 1.2 ? '#38bdf8' : '#fde047',
+        colorGlow2: '#facc15'
+      });
+      spawnZeusSparks(endX, endY, 20);
+
+      if (modalCard && intensity > 1.2) {
+        modalCard.classList.remove('zeus-shake');
+        void modalCard.offsetWidth;
+        modalCard.classList.add('zeus-shake');
+      }
+    }, delay);
+  };
+
+  // Strike 1: Top right striking down to Zeus
+  scheduleStrike(w * 0.85, 0, targetX + 15, targetY - 10, 0, 1.2);
+  // Strike 2: Top left striking down
+  scheduleStrike(w * 0.15, 0, targetX - 25, targetY + 20, 180, 1.0);
+  // Strike 3: Massive central blast
+  scheduleStrike(w * 0.5, 0, targetX, targetY, 420, 1.8);
+  // Strike 4: Right fork
+  scheduleStrike(w * 0.9, h * 0.2, targetX + 35, targetY + 40, 580, 1.1);
+
+  if (zeusAnimFrame) cancelAnimationFrame(zeusAnimFrame);
+  const startTime = performance.now();
+
+  function renderZeusFrame(now) {
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw active strikes
+    for (let i = zeusActiveStrikes.length - 1; i >= 0; i--) {
+      const strike = zeusActiveStrikes[i];
+      strike.life -= strike.decay;
+      if (strike.life <= 0) {
+        zeusActiveStrikes.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, strike.life * 1.3);
+
+      // Outer glow
+      ctx.strokeStyle = strike.colorGlow1;
+      ctx.lineWidth = 10 * strike.intensity;
+      ctx.shadowColor = strike.colorGlow2;
+      ctx.shadowBlur = 24;
+      ctx.beginPath();
+      strike.segments.forEach(s => {
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      });
+      ctx.stroke();
+
+      // Mid glow
+      ctx.strokeStyle = strike.colorGlow2;
+      ctx.lineWidth = 4 * strike.intensity;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+
+      // Core white bolt
+      ctx.strokeStyle = strike.colorCore;
+      ctx.lineWidth = 2 * strike.intensity;
+      ctx.shadowBlur = 4;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // Draw sparks
+    for (let i = zeusParticles.length - 1; i >= 0; i--) {
+      const p = zeusParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.25;
+      p.life -= p.decay;
+      if (p.life <= 0) {
+        zeusParticles.splice(i, 1);
+        continue;
+      }
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (zeusActiveStrikes.length > 0 || zeusParticles.length > 0 || (now - startTime < 1300)) {
+      zeusAnimFrame = requestAnimationFrame(renderZeusFrame);
+    } else {
+      ctx.clearRect(0, 0, w, h);
+      canvas.classList.add('hidden');
+    }
+  }
+
+  zeusAnimFrame = requestAnimationFrame(renderZeusFrame);
+}
+
 // ── RT Modal ──────────────────────────────────────────────
 function showRTModal() {
   const targetScore = getTargetScore(activeSession);
@@ -3145,13 +3570,31 @@ function showRTModal() {
 
   show('modal-rt');
   renderGame();
+  setTimeout(() => {
+    triggerZeusLightning();
+  }, 100);
 }
 
-function dismissRTModal() { hide('modal-rt'); rtTriggerPlayers = []; }
-
-async function closeSessionFromRTModal() {
+function dismissRTModal() {
   hide('modal-rt');
   rtTriggerPlayers = [];
+  const canvas = document.getElementById('zeus-canvas');
+  if (canvas) {
+    canvas.classList.add('hidden');
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  const flash = document.getElementById('zeus-flash');
+  if (flash) {
+    flash.classList.add('hidden');
+    flash.classList.remove('zeus-flash-active');
+  }
+  const modalCard = document.querySelector('#modal-rt > div');
+  if (modalCard) modalCard.classList.remove('zeus-electric-border', 'zeus-shake');
+}
+
+async function closeSessionFromRTModal() {
+  dismissRTModal();
   await toggleCloseSession(activeSessionId);
 }
 
@@ -3206,8 +3649,7 @@ async function startNewPhase() {
   }
 
   hideLoading();
-  hide('modal-rt');
-  rtTriggerPlayers = [];
+  dismissRTModal();
   renderGame();
 }
 
