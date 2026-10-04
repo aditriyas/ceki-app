@@ -398,6 +398,20 @@
         <span class="nav-btn-label" data-i18n="nav_audit">Audit</span>
       </button>
 
+      <!-- What's New / Patch Notes Button (Mobile & Desktop) -->
+      <button id="nav-btn-whats-new" onclick="openWhatsNewModal()"
+        class="relative text-xs px-2 sm:px-2.5 py-1.5 rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 hover:from-amber-500/25 hover:to-yellow-500/25 text-amber-300 font-bold transition-all flex items-center gap-1 shrink-0 shadow-sm cursor-pointer"
+        title="What's New / Patch Notes">
+        <span class="animate-bounce inline-block text-xs">✨</span>
+        <span class="hidden sm:inline font-casino tracking-wide" data-i18n="nav_whats_new">WHAT'S NEW</span>
+        <span class="sm:hidden text-[10px] font-bold" data-i18n="nav_whats_new_short">BARU</span>
+        <!-- Unread notification pulsing dot -->
+        <span id="whats-new-badge-dot" class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 shadow-sm"></span>
+        </span>
+      </button>
+
       <!-- Theme Switcher Button (Always visible on mobile & desktop) -->
       <button id="nav-btn-theme" onclick="openThemeModal()"
         class="theme-toggle-btn text-xs px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/60 text-[var(--foreground)] transition-all flex items-center gap-1.5 font-bold shrink-0 shadow-sm"
@@ -445,6 +459,16 @@
         <span data-i18n="nav_audit">Audit</span>
       </span>
       <span class="text-[10px] text-[var(--muted-foreground)]">➔</span>
+    </button>
+
+    <!-- What's New link in Mobile Menu -->
+    <button onclick="openWhatsNewModal(); closeMobileMenu();"
+      class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 flex items-center justify-between transition-colors border border-amber-500/30">
+      <span class="flex items-center gap-2.5">
+        <span class="animate-bounce">✨</span>
+        <span data-i18n="nav_whats_new_menu">Update Semalam (Patch Notes)</span>
+      </span>
+      <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500 text-white font-black animate-pulse shadow">NEW</span>
     </button>
 
     <div class="border-t border-[var(--border)]/60 my-1"></div>
@@ -1146,6 +1170,45 @@
   </div>
 </div>
 
+<!-- What's New / Patch Notes Modal -->
+<div id="modal-whats-new" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay bg-black/80 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-amber-500/40 rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl anim-in relative overflow-hidden flex flex-col max-h-[92vh]">
+    <!-- Decorative Glow Top -->
+    <div class="absolute -top-12 -left-12 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="absolute -top-12 -right-12 w-36 h-36 bg-yellow-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+    <!-- Header Section -->
+    <div class="flex items-start justify-between mb-3 border-b border-[var(--border)] pb-3 shrink-0 relative z-10">
+      <div>
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-black text-amber-300 tracking-wider uppercase mb-1 shadow-sm">
+          <span class="animate-pulse">⚡</span>
+          <span id="whats-new-version-badge">MAJOR UPDATE · v2.5</span>
+        </div>
+        <h3 id="whats-new-title" class="text-base sm:text-lg font-black font-casino gold-text flex items-center gap-1.5 leading-tight">
+          <span>🎰</span> <span>APA YANG BARU?</span>
+        </h3>
+        <p id="whats-new-subtitle" class="text-[11px] text-[var(--muted-foreground)] mt-0.5 leading-snug">
+          Fitur baru semalam buat bikin sesi main kamu makin seru, adil, & aman!
+        </p>
+      </div>
+      <button type="button" onclick="dismissWhatsNewModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted-foreground)] hover:text-white hover:bg-white/10 active:scale-90 transition-all text-xl font-bold shrink-0 ml-2" aria-label="Close">✕</button>
+    </div>
+
+    <!-- Scrollable Feature Cards Container -->
+    <div id="whats-new-cards-container" class="overflow-y-auto space-y-3 pr-1 flex-1 text-left text-xs"></div>
+
+    <!-- Modal Footer Actions -->
+    <div class="pt-3 border-t border-[var(--border)] shrink-0 text-center relative z-10 mt-1">
+      <button onclick="dismissWhatsNewModal()" id="whats-new-confirm-btn" class="w-full btn-gold py-3 rounded-2xl text-xs sm:text-sm font-black shadow-xl tracking-wide uppercase transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
+        <span>MANTAP, GAS MAIN SEKARANG! 🎰</span>
+      </button>
+      <p id="whats-new-footer-hint" class="text-[10px] text-[var(--muted-foreground)] mt-2">
+        Bisa dibuka lagi kapan saja lewat menu atas <span class="text-amber-300 font-bold">✨ WHAT'S NEW</span>
+      </p>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Supabase ──────────────────────────────────────────────
 const { createClient } = supabase;
@@ -1187,6 +1250,9 @@ const translations = {
     nav_theme_classic: "Theme",
     nav_lang: "EN",
     nav_lang_title: "Language",
+    nav_whats_new: "WHAT'S NEW",
+    nav_whats_new_short: "NEW",
+    nav_whats_new_menu: "Overnight Updates (Patch Notes)",
 
     ticker_text: '🎰 <span class="font-bold text-white">VIP CEKI ARENA:</span> Welcome High Rollers &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">HOT INFO:</span> Reaching 1,000 pts triggers Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> No Pak RT yet (All Safe) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">ANTI-CHEAT SYSTEM:</span> Audit Log records IP & Geolocation 24/7!',
     ticker_shame_title: "WALL OF SHAME (PAK RT):",
@@ -1422,6 +1488,9 @@ const translations = {
     nav_theme_classic: "Tema",
     nav_lang: "ID",
     nav_lang_title: "Bahasa",
+    nav_whats_new: "UPDATE BARU",
+    nav_whats_new_short: "BARU",
+    nav_whats_new_menu: "Update Semalam (Patch Notes)",
 
     ticker_text: '🎰 <span class="font-bold text-white">ARENA MEJA CEKI VIP:</span> Selamat datang para Sultan &nbsp;·&nbsp; ⚡ <span class="font-bold text-yellow-400">INFO GACOR:</span> Poin tembus 1,000 jadi Sensational Maxwin! &nbsp;·&nbsp; 🃏 <span class="font-bold text-red-400">WALL OF SHAME (PAK RT):</span> Belum ada korban (Semua Aman) &nbsp;·&nbsp; 🛡️ <span class="font-bold text-cyan-300">SISTEM ANTI-CURANG:</span> Mutasi Log mencatat IP & Geolocation 24/7!',
     ticker_shame_title: "WALL OF SHAME (PAK RT):",
@@ -1719,6 +1788,12 @@ function updateLanguageUI() {
     }
   });
 
+  // Re-render What's New modal if currently open
+  const whatsNewModal = document.getElementById('modal-whats-new');
+  if (whatsNewModal && !whatsNewModal.classList.contains('hidden')) {
+    renderWhatsNewContent();
+  }
+
   updateThemeUI();
 }
 
@@ -1885,6 +1960,202 @@ function setTheme(theme) {
     : (currentLang === 'id' ? 'Dark Classic' : 'Dark Classic');
   showToast(t('toast_theme_changed', { name }), 'success');
   setTimeout(closeThemeModal, 200);
+}
+
+// ── What's New / Patch Notes Logic ────────────────────────
+const WHATS_NEW_VERSION = '2026-10-04-v2.5';
+
+function openWhatsNewModal() {
+  renderWhatsNewContent();
+  show('modal-whats-new');
+}
+
+function dismissWhatsNewModal() {
+  localStorage.setItem('ceki_whats_new_version', WHATS_NEW_VERSION);
+  const badgeDot = document.getElementById('whats-new-badge-dot');
+  if (badgeDot) badgeDot.classList.add('hidden');
+  hide('modal-whats-new');
+}
+
+function checkWhatsNewAutoPopup() {
+  const lastSeen = localStorage.getItem('ceki_whats_new_version');
+  const badgeDot = document.getElementById('whats-new-badge-dot');
+  if (lastSeen !== WHATS_NEW_VERSION) {
+    if (badgeDot) badgeDot.classList.remove('hidden');
+    // Auto popup once for new version with smooth delay
+    setTimeout(() => {
+      openWhatsNewModal();
+    }, 700);
+  } else {
+    if (badgeDot) badgeDot.classList.add('hidden');
+  }
+}
+
+function renderWhatsNewContent() {
+  const isId = (currentLang === 'id');
+  const titleEl = document.getElementById('whats-new-title');
+  const subEl = document.getElementById('whats-new-subtitle');
+  const badgeEl = document.getElementById('whats-new-version-badge');
+  const btnEl = document.getElementById('whats-new-confirm-btn');
+  const hintEl = document.getElementById('whats-new-footer-hint');
+  const container = document.getElementById('whats-new-cards-container');
+
+  if (titleEl) titleEl.innerHTML = `<span>🎰</span> <span>${isId ? 'APA YANG BARU DI CEKI TRACKER?' : 'WHAT\'S NEW IN CEKI TRACKER?'}</span>`;
+  if (subEl) subEl.textContent = isId 
+    ? 'Fitur baru semalam buat bikin sesi main makin seru, aman dari meja sebelah & ada animasi balapannya!' 
+    : 'Fresh overnight features to keep games secure, interactive, and full of action!';
+  if (badgeEl) badgeEl.textContent = 'MAJOR UPDATE · v2.5';
+  if (btnEl) btnEl.innerHTML = `<span>${isId ? 'MANTAP, GAS MAIN SEKARANG! 🎰' : 'AWESOME, LET\'S PLAY! 🎰'}</span>`;
+  if (hintEl) hintEl.innerHTML = isId
+    ? 'Bisa dibuka lagi kapan saja lewat menu atas <span class="text-amber-300 font-bold">✨ WHAT\'S NEW</span>'
+    : 'Revisit these patch notes anytime via the top <span class="text-amber-300 font-bold">✨ WHAT\'S NEW</span> button';
+
+  if (!container) return;
+
+  const features = isId ? [
+    {
+      badge: 'KEAMANAN MEJA',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      icon: '🔒',
+      title: 'Kunci Meja Pakai PIN 4 Angka (Anti-Iseng)',
+      desc: 'Meja sebelah suka iseng buka & ganti-ganti skor? Waktu bikin meja baru, sekarang kamu bisa pasang <b>PIN 4 Angka</b> (model input OTP). Meja yang dikunci PIN ga bisa diakses atau diubah sembarang orang!',
+      bullets: [
+        '🛡️ Proteksi saat pertama buka meja maupun saat layar direfresh.',
+        '🗑️ Menghapus meja ber-PIN juga wajib verifikasi PIN / Master PIN.',
+        '🔑 Tersedia <b>Master PIN</b> (<code>3583</code>) untuk akses darurat panitia.'
+      ]
+    },
+    {
+      badge: 'GRAFIK INTERAKTIF',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      icon: '🏎️',
+      title: 'Animasi Balapan Posisi (Rank Race) & Analytics',
+      desc: 'Bukan cuma grafik garis biasa! Sekarang ada tombol <b>"Trend Skor 📈"</b> di bawah scoreboard dengan 4 tampilan visual interaktif:',
+      bullets: [
+        '🏎️ <b>Rank Race:</b> Tonton animasi balapan posisi 1–4 per ronde ala balap F1 lengkap dengan tombol Play ▶️, Pause, dan slider putaran!',
+        '📉 <b>Bump Chart:</b> Jalur grafis perpindahan ranking dinamis pemain.',
+        '📊 <b>Standings Matrix:</b> Tabel rekap performa & skor per putaran yang bersih.',
+        '🔍 <b>Filter Pemain:</b> Ketuk nama pemain untuk menyorot jalurnya saja.'
+      ]
+    },
+    {
+      badge: 'SENSATIONAL FX',
+      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      icon: '⚡',
+      title: 'Efek Petir Zeus Saat Poin Tembus 1.000',
+      desc: 'Siapakah yang bakal jadi calon korban Pak RT berikutnya? Saat skor pemain menyentuh target 1.000 poin, layar akan disambar kilatan petir listrik Zeus megah dengan audio synthesizer spektakuler!',
+      actionBtn: {
+        text: 'TES EFEK PETIR & AUDIO ZEUS',
+        fn: 'triggerZeusLightning()'
+      }
+    },
+    {
+      badge: 'CLEAN DISPLAY',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      icon: '🏁',
+      title: 'Bendera Finish Meja & Ticker Hall of Shame Bersih',
+      desc: 'Tampilan status kini jauh lebih jelas & tertata rapi:',
+      bullets: [
+        '🏁 Meja yang sudah selesai ditandai bendera finish <code>🏁</code> (icon gembok khusus untuk PIN).',
+        '🃏 Running text <b>Hall of Shame</b> di bagian atas kini otomatis hanya menampilkan meja yang masih berlangsung (aktif).'
+      ]
+    },
+    {
+      badge: 'UI UPGRADE',
+      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      icon: '🛡️',
+      title: 'Ga Ada Lagi Alert Browser Kaku (Full Popup VIP)',
+      desc: 'Semua kotak konfirmasi abu-abu bawaan browser kini sudah diganti modal pop-up gelap khas Casino VIP. Tombol hapus meja juga berwarna merah menyala agar terlihat jelas sebagai tombol bahaya.',
+      bullets: [
+        '✨ Semua konfirmasi & notifikasi tampil elegan dengan pop-up VIP.',
+        '🗑️ Tombol delete berdesain red danger component yang tegas.'
+      ]
+    }
+  ] : [
+    {
+      badge: 'ROOM SECURITY',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      icon: '🔒',
+      title: '4-Digit Table PIN Protection (Anti-Prank)',
+      desc: 'Neighboring tables messing around with your scores? When opening a table, you can now toggle an optional <b>4-digit OTP PIN</b>. Protected rooms cannot be accessed or modified without the PIN!',
+      bullets: [
+        '🛡️ Locked on first entry and persists across page refreshes.',
+        '🗑️ Deleting a protected table also requires PIN verification.',
+        '🔑 Master PIN (<code>3583</code>) available for universal organizer access.'
+      ]
+    },
+    {
+      badge: 'INTERACTIVE CHARTS',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      icon: '🏎️',
+      title: 'Animated Rank Race & Analytics Suite',
+      desc: 'Visual analytics completely reimagined! Tap <b>"Score Trend 📈"</b> under the scoreboard to explore 4 modes:',
+      bullets: [
+        '🏎️ <b>Rank Race:</b> Watch a live animated F1-style race of player ranks round by round with Play ▶️, Pause, and round scrubbing!',
+        '📉 <b>Bump Chart:</b> Dynamic rank displacement paths across rounds.',
+        '📊 <b>Standings Matrix:</b> Clean tabular overview of points & rounds.',
+        '🔍 <b>Player Filter:</b> Tap player pills to focus exclusively on their lines.'
+      ]
+    },
+    {
+      badge: 'SENSATIONAL FX',
+      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      icon: '⚡',
+      title: 'Zeus Lightning FX & Audio Synthesizer',
+      desc: 'Who will become the next Pak RT? Reaching the 1,000 pts target triggers sensational full-screen Zeus lightning bolts and triumphant synthesizer fanfare!',
+      actionBtn: {
+        text: 'TEST ZEUS LIGHTNING & AUDIO FX',
+        fn: 'triggerZeusLightning()'
+      }
+    },
+    {
+      badge: 'CLEAN DISPLAY',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      icon: '🏁',
+      title: 'Checkered Finish Flag & Clean Ticker',
+      desc: 'Visual clarity upgrades across the app:',
+      bullets: [
+        '🏁 Finished tables marked with checkered flag <code>🏁</code> (padlock reserved exclusively for PINs).',
+        '🃏 The top <b>Hall of Shame</b> ticker now filters strictly to active open tables.'
+      ]
+    },
+    {
+      badge: 'UI UPGRADE',
+      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      icon: '🛡️',
+      title: 'Full Casino VIP Modal System (Zero Browser Alerts)',
+      desc: 'All clunky native browser alerts have been replaced with dark glassmorphism modals. Deletion buttons now feature prominent red danger styling.',
+      bullets: [
+        '✨ Unified dark luxury popup experience across all devices.',
+        '🗑️ High-visibility red danger trash bin buttons.'
+      ]
+    }
+  ];
+
+  container.innerHTML = features.map(f => `
+    <div class="bg-black/40 border border-white/10 hover:border-amber-500/40 rounded-2xl p-3.5 transition-colors shadow-sm">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${f.badgeColor}">
+          ${f.badge}
+        </span>
+        <span class="text-base">${f.icon}</span>
+      </div>
+      <h4 class="font-bold text-sm text-white mb-1">${f.title}</h4>
+      <p class="text-[11px] text-[var(--muted-foreground)] leading-relaxed mb-2">${f.desc}</p>
+      ${f.bullets ? `
+        <ul class="space-y-1 text-[11px] text-slate-300 bg-black/30 rounded-xl p-2.5 border border-white/5">
+          ${f.bullets.map(b => `<li class="flex items-start gap-1.5 leading-tight"><span class="text-amber-400 shrink-0">•</span><span>${b}</span></li>`).join('')}
+        </ul>
+      ` : ''}
+      ${f.actionBtn ? `
+        <button type="button" onclick="${f.actionBtn.fn}" class="mt-2.5 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/25 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/35 border border-amber-400/50 text-amber-300 text-[11px] font-black flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer">
+          <span>⚡</span>
+          <span>${f.actionBtn.text}</span>
+          <span>⚡</span>
+        </button>
+      ` : ''}
+    </div>
+  `).join('');
 }
 
 // ── Phase Helpers ─────────────────────────────────────────
@@ -2865,10 +3136,12 @@ async function init() {
     } else {
       showSessionsScreen(false);
     }
+    checkWhatsNewAutoPopup();
   } catch (err) {
     console.error('init error:', err);
     hideLoading();
     showSessionsScreen(false);
+    checkWhatsNewAutoPopup();
   }
 }
 
@@ -5813,6 +6086,7 @@ document.getElementById('modal-theme').addEventListener('click',        e => { i
 document.getElementById('modal-pin-prompt')?.addEventListener('click',  e => { if(e.target===e.currentTarget) cancelSessionPinPrompt(); });
 document.getElementById('modal-toggle-close')?.addEventListener('click',  e => { if(e.target===e.currentTarget) closeToggleCloseModal(); });
 document.getElementById('modal-custom-dialog')?.addEventListener('click', e => { if(e.target===e.currentTarget) closeCustomDialog(null); });
+document.getElementById('modal-whats-new')?.addEventListener('click',     e => { if(e.target===e.currentTarget) dismissWhatsNewModal(); });
 document.getElementById('mobile-nav-menu')?.addEventListener('click',   e => { if(e.target===e.currentTarget) closeMobileMenu(); });
 
 document.addEventListener('click', e => {
