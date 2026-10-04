@@ -2863,12 +2863,23 @@ function bindOtpInputs(containerSelector, onComplete, onSubmit) {
       }
     });
   });
+
+  // Tap anywhere on the boxes container to focus the active/first empty digit box
+  container.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'INPUT') {
+      const emptyInput = inputs.find(i => !i.value) || inputs[inputs.length - 1];
+      if (emptyInput) emptyInput.focus();
+    }
+  });
 }
 
 function promptSessionPinModal(session, rounds, push = true) {
   pendingPinSession = session;
   pendingPinRounds = rounds;
   pendingPinPush = push;
+
+  // Make sure loading overlay doesn't block touch or focus
+  hideLoading();
 
   const modal = document.getElementById('modal-pin-prompt');
   const sessNameEl = document.getElementById('pin-prompt-session-name');
@@ -2888,10 +2899,23 @@ function promptSessionPinModal(session, rounds, push = true) {
 
   if (modal) modal.classList.remove('hidden');
 
+  // Trigger focus immediately within user interaction thread so mobile virtual keypad pops up
+  const firstInput = document.querySelector('.prompt-pin-box');
+  if (firstInput) {
+    try { firstInput.focus({ preventScroll: true }); } catch (e) { firstInput.focus(); }
+  }
+
+  // Backup attempts for browsers with render/layout transitions
+  requestAnimationFrame(() => {
+    if (firstInput && document.activeElement !== firstInput) {
+      try { firstInput.focus({ preventScroll: true }); } catch (e) { firstInput.focus(); }
+    }
+  });
   setTimeout(() => {
-    const firstInput = document.querySelector('.prompt-pin-box');
-    if (firstInput) firstInput.focus();
-  }, 100);
+    if (firstInput && document.activeElement !== firstInput) {
+      try { firstInput.focus({ preventScroll: true }); } catch (e) { firstInput.focus(); }
+    }
+  }, 80);
 }
 
 function closeSessionPinPrompt() {
@@ -3550,6 +3574,28 @@ async function renderSessionsList(sessions = null) {
 // ── Game Screen ───────────────────────────────────────────
 async function openSession(id, push = true) {
   activeSessionId = id; historyVisible = false;
+
+  // Instant PIN prompt: if session is already cached in memory and has a PIN that isn't unlocked yet,
+  // immediately open the PIN prompt and focus the first box within this user tap gesture!
+  const cachedSession = (allSessions || []).find(s => s && s.id === id);
+  if (cachedSession) {
+    const cachedPin = getSessionPin(cachedSession);
+    if (cachedPin && !unlockedSessions.has(cachedSession.id)) {
+      promptSessionPinModal(cachedSession, allSessionsRoundsMap[id] || [], push);
+      // Fetch full latest session & rounds in background
+      Promise.all([
+        db.from('sessions').select('*').eq('id', id).single(),
+        db.from('rounds').select('*').eq('session_id', id).order('created_at', { ascending: true })
+      ]).then(([{ data: session }, { data: rounds }]) => {
+        if (session && pendingPinSession && pendingPinSession.id === id) {
+          pendingPinSession = session;
+          pendingPinRounds = rounds || [];
+        }
+      }).catch(err => console.warn('Background pin session fetch error:', err));
+      return;
+    }
+  }
+
   showLoading('Loading session...');
   try {
     const [{ data: session, error: e1 }, { data: rounds, error: e2 }] = await Promise.all([
