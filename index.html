@@ -1171,15 +1171,15 @@
 </div>
 
 <!-- What's New / Patch Notes Modal -->
-<div id="modal-whats-new" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay bg-black/80 backdrop-blur-md">
-  <div class="bg-[var(--card)] border border-amber-500/40 rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl anim-in relative overflow-hidden flex flex-col max-h-[92vh]">
+<div id="modal-whats-new" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-overlay bg-black/85 backdrop-blur-md">
+  <div class="bg-[var(--card)] border border-amber-500/40 rounded-3xl p-4 sm:p-5 w-full max-w-sm sm:max-w-md shadow-2xl anim-in relative overflow-hidden flex flex-col max-h-[82vh] my-auto">
     <!-- Decorative Glow Top -->
-    <div class="absolute -top-12 -left-12 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl pointer-events-none"></div>
-    <div class="absolute -top-12 -right-12 w-36 h-36 bg-yellow-500/20 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="absolute -top-12 -left-12 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="absolute -top-12 -right-12 w-32 h-32 bg-yellow-500/15 rounded-full blur-2xl pointer-events-none"></div>
 
     <!-- Header Section -->
-    <div class="flex items-start justify-between mb-3 border-b border-[var(--border)] pb-3 shrink-0 relative z-10">
-      <div>
+    <div class="flex items-start justify-between pb-3 mb-2 border-b border-[var(--border)] shrink-0 relative z-10">
+      <div class="pr-2">
         <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-black text-amber-300 tracking-wider uppercase mb-1 shadow-sm">
           <span class="animate-pulse">⚡</span>
           <span id="whats-new-version-badge">MAJOR UPDATE · v2.5</span>
@@ -1191,18 +1191,18 @@
           Fitur baru semalam buat bikin sesi main kamu makin seru, adil, & aman!
         </p>
       </div>
-      <button type="button" onclick="dismissWhatsNewModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted-foreground)] hover:text-white hover:bg-white/10 active:scale-90 transition-all text-xl font-bold shrink-0 ml-2" aria-label="Close">✕</button>
+      <button type="button" onclick="dismissWhatsNewModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted-foreground)] hover:text-white hover:bg-white/10 active:scale-90 transition-all text-xl font-bold shrink-0 ml-1" aria-label="Close">✕</button>
     </div>
 
     <!-- Scrollable Feature Cards Container -->
-    <div id="whats-new-cards-container" class="overflow-y-auto space-y-3 pr-1 flex-1 text-left text-xs"></div>
+    <div id="whats-new-cards-container" class="overflow-y-auto space-y-2.5 pr-1 flex-1 text-left text-xs my-1"></div>
 
     <!-- Modal Footer Actions -->
-    <div class="pt-3 border-t border-[var(--border)] shrink-0 text-center relative z-10 mt-1">
-      <button onclick="dismissWhatsNewModal()" id="whats-new-confirm-btn" class="w-full btn-gold py-3 rounded-2xl text-xs sm:text-sm font-black shadow-xl tracking-wide uppercase transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
+    <div class="pt-2.5 border-t border-[var(--border)] shrink-0 text-center relative z-10 mt-1">
+      <button onclick="dismissWhatsNewModal()" id="whats-new-confirm-btn" class="w-full btn-gold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-black shadow-xl tracking-wide uppercase transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
         <span>MANTAP, GAS MAIN SEKARANG! 🎰</span>
       </button>
-      <p id="whats-new-footer-hint" class="text-[10px] text-[var(--muted-foreground)] mt-2">
+      <p id="whats-new-footer-hint" class="text-[10px] text-[var(--muted-foreground)] mt-1.5">
         Bisa dibuka lagi kapan saja lewat menu atas <span class="text-amber-300 font-bold">✨ WHAT'S NEW</span>
       </p>
     </div>
@@ -2015,145 +2015,118 @@ function renderWhatsNewContent() {
   const features = isId ? [
     {
       badge: 'KEAMANAN MEJA',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
       icon: '🔒',
-      title: 'Kunci Meja Pakai PIN 4 Angka (Anti-Iseng)',
-      desc: 'Meja sebelah suka iseng buka & ganti-ganti skor? Waktu bikin meja baru, sekarang kamu bisa pasang <b>PIN 4 Angka</b> (model input OTP). Meja yang dikunci PIN ga bisa diakses atau diubah sembarang orang!',
-      bullets: [
-        '🛡️ Proteksi saat pertama buka meja maupun saat layar direfresh.',
-        '🗑️ Menghapus meja ber-PIN juga wajib verifikasi PIN / Master PIN.',
-        '🔑 Tersedia <b>Master PIN</b> (<code>3583</code>) untuk akses darurat panitia.'
-      ]
+      title: 'Kunci Meja Pakai PIN 4 Angka',
+      desc: 'Anti-iseng meja sebelah! Aktifkan PIN saat buat meja baru. Dilengkapi <b>Master PIN</b> (<code>3583</code>) buat panitia.',
+      tags: ['Input PIN OTP', 'Tahan Refresh', 'Hapus Wajib PIN']
     },
     {
       badge: 'GRAFIK INTERAKTIF',
-      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
       icon: '🏎️',
-      title: 'Animasi Balapan Posisi (Rank Race) & Analytics',
-      desc: 'Bukan cuma grafik garis biasa! Sekarang ada tombol <b>"Trend Skor 📈"</b> di bawah scoreboard dengan 4 tampilan visual interaktif:',
-      bullets: [
-        '🏎️ <b>Rank Race:</b> Tonton animasi balapan posisi 1–4 per ronde ala balap F1 lengkap dengan tombol Play ▶️, Pause, dan slider putaran!',
-        '📉 <b>Bump Chart:</b> Jalur grafis perpindahan ranking dinamis pemain.',
-        '📊 <b>Standings Matrix:</b> Tabel rekap performa & skor per putaran yang bersih.',
-        '🔍 <b>Filter Pemain:</b> Ketuk nama pemain untuk menyorot jalurnya saja.'
-      ]
+      title: 'Trend Skor & Animasi Balap Posisi',
+      desc: 'Klik <b>"Trend Skor 📈"</b> di bawah scoreboard untuk tonton animasi balapan posisi 1–4 per ronde ala F1, bump chart & tabel standings.',
+      tags: ['Rank Race Animasi', 'Bump Chart', 'Filter Pemain']
     },
     {
       badge: 'SENSATIONAL FX',
-      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      badgeColor: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
       icon: '⚡',
-      title: 'Efek Petir Zeus Saat Poin Tembus 1.000',
-      desc: 'Siapakah yang bakal jadi calon korban Pak RT berikutnya? Saat skor pemain menyentuh target 1.000 poin, layar akan disambar kilatan petir listrik Zeus megah dengan audio synthesizer spektakuler!',
+      title: 'Efek Sambaran Petir Zeus (1.000 Poin)',
+      desc: 'Saat pemain tembus target poin, layar disambar petir listrik Olympus megah dengan sound synthesizer!',
       actionBtn: {
-        text: 'TES EFEK PETIR & AUDIO ZEUS',
+        text: 'TES PETIR & AUDIO ZEUS',
         fn: 'triggerZeusLightning()'
       }
     },
     {
-      badge: 'CLEAN DISPLAY',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      badge: 'STATUS BERSIH',
+      badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
       icon: '🏁',
-      title: 'Bendera Finish Meja & Ticker Hall of Shame Bersih',
-      desc: 'Tampilan status kini jauh lebih jelas & tertata rapi:',
-      bullets: [
-        '🏁 Meja yang sudah selesai ditandai bendera finish <code>🏁</code> (icon gembok khusus untuk PIN).',
-        '🃏 Running text <b>Hall of Shame</b> di bagian atas kini otomatis hanya menampilkan meja yang masih berlangsung (aktif).'
-      ]
+      title: 'Bendera Finish & Ticker Meja Aktif',
+      desc: 'Meja selesai ditandai bendera <code>🏁</code> (gembok khusus PIN). Running text atas hanya menampilkan meja yang aktif bermain.',
+      tags: ['Icon Bendera 🏁', 'Filter Running Text']
     },
     {
       badge: 'UI UPGRADE',
-      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
       icon: '🛡️',
-      title: 'Ga Ada Lagi Alert Browser Kaku (Full Popup VIP)',
-      desc: 'Semua kotak konfirmasi abu-abu bawaan browser kini sudah diganti modal pop-up gelap khas Casino VIP. Tombol hapus meja juga berwarna merah menyala agar terlihat jelas sebagai tombol bahaya.',
-      bullets: [
-        '✨ Semua konfirmasi & notifikasi tampil elegan dengan pop-up VIP.',
-        '🗑️ Tombol delete berdesain red danger component yang tegas.'
-      ]
+      title: 'Full Dialog Pop-up VIP',
+      desc: 'Semua alert browser kaku diganti pop-up tema Casino VIP, serta tombol hapus berdesain merah danger.',
+      tags: ['Zero Alert Browser', 'Red Trash Danger']
     }
   ] : [
     {
       badge: 'ROOM SECURITY',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
       icon: '🔒',
-      title: '4-Digit Table PIN Protection (Anti-Prank)',
-      desc: 'Neighboring tables messing around with your scores? When opening a table, you can now toggle an optional <b>4-digit OTP PIN</b>. Protected rooms cannot be accessed or modified without the PIN!',
-      bullets: [
-        '🛡️ Locked on first entry and persists across page refreshes.',
-        '🗑️ Deleting a protected table also requires PIN verification.',
-        '🔑 Master PIN (<code>3583</code>) available for universal organizer access.'
-      ]
+      title: '4-Digit Table PIN (Anti-Prank)',
+      desc: 'Prevent unwanted edits! Lock tables with a 4-digit PIN upon creation. Universal <b>Master PIN</b> (<code>3583</code>) included.',
+      tags: ['OTP PIN Box', 'Refresh Persistent', 'PIN on Delete']
     },
     {
       badge: 'INTERACTIVE CHARTS',
-      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
       icon: '🏎️',
-      title: 'Animated Rank Race & Analytics Suite',
-      desc: 'Visual analytics completely reimagined! Tap <b>"Score Trend 📈"</b> under the scoreboard to explore 4 modes:',
-      bullets: [
-        '🏎️ <b>Rank Race:</b> Watch a live animated F1-style race of player ranks round by round with Play ▶️, Pause, and round scrubbing!',
-        '📉 <b>Bump Chart:</b> Dynamic rank displacement paths across rounds.',
-        '📊 <b>Standings Matrix:</b> Clean tabular overview of points & rounds.',
-        '🔍 <b>Player Filter:</b> Tap player pills to focus exclusively on their lines.'
-      ]
+      title: 'Score Trend & Rank Race Suite',
+      desc: 'Tap <b>"Score Trend 📈"</b> for live animated F1-style position races, bump chart rank shifts, and standings table.',
+      tags: ['Animated Race', 'Bump Chart', 'Player Isolation']
     },
     {
       badge: 'SENSATIONAL FX',
-      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      badgeColor: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
       icon: '⚡',
-      title: 'Zeus Lightning FX & Audio Synthesizer',
-      desc: 'Who will become the next Pak RT? Reaching the 1,000 pts target triggers sensational full-screen Zeus lightning bolts and triumphant synthesizer fanfare!',
+      title: 'Zeus Lightning FX at 1,000 Pts',
+      desc: 'Full-screen Olympus lightning flash and audio synthesizer fanfare when target points are hit!',
       actionBtn: {
-        text: 'TEST ZEUS LIGHTNING & AUDIO FX',
+        text: 'TEST LIGHTNING & AUDIO FX',
         fn: 'triggerZeusLightning()'
       }
     },
     {
       badge: 'CLEAN DISPLAY',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
       icon: '🏁',
-      title: 'Checkered Finish Flag & Clean Ticker',
-      desc: 'Visual clarity upgrades across the app:',
-      bullets: [
-        '🏁 Finished tables marked with checkered flag <code>🏁</code> (padlock reserved exclusively for PINs).',
-        '🃏 The top <b>Hall of Shame</b> ticker now filters strictly to active open tables.'
-      ]
+      title: 'Finish Flag & Active Ticker Filter',
+      desc: 'Closed rooms show checkered flag <code>🏁</code> (padlock reserved for PIN). Running ticker filters only active matches.',
+      tags: ['Finish Flag 🏁', 'Active Ticker Filter']
     },
     {
       badge: 'UI UPGRADE',
-      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
       icon: '🛡️',
-      title: 'Full Casino VIP Modal System (Zero Browser Alerts)',
-      desc: 'All clunky native browser alerts have been replaced with dark glassmorphism modals. Deletion buttons now feature prominent red danger styling.',
-      bullets: [
-        '✨ Unified dark luxury popup experience across all devices.',
-        '🗑️ High-visibility red danger trash bin buttons.'
-      ]
+      title: 'Full Casino VIP Modal Dialogs',
+      desc: 'Native browser popups replaced with dark glassmorphism modals, plus red danger deletion controls.',
+      tags: ['Zero Native Alerts', 'Red Danger Trash']
     }
   ];
 
   container.innerHTML = features.map(f => `
-    <div class="bg-black/40 border border-white/10 hover:border-amber-500/40 rounded-2xl p-3.5 transition-colors shadow-sm">
-      <div class="flex items-center justify-between mb-1.5">
-        <span class="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${f.badgeColor}">
-          ${f.badge}
-        </span>
-        <span class="text-base">${f.icon}</span>
+    <div class="bg-black/30 border border-white/10 hover:border-amber-400/30 rounded-2xl p-3 transition-colors shadow-sm flex items-start gap-3">
+      <div class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-lg shrink-0 shadow-inner mt-0.5">
+        ${f.icon}
       </div>
-      <h4 class="font-bold text-sm text-white mb-1">${f.title}</h4>
-      <p class="text-[11px] text-[var(--muted-foreground)] leading-relaxed mb-2">${f.desc}</p>
-      ${f.bullets ? `
-        <ul class="space-y-1 text-[11px] text-slate-300 bg-black/30 rounded-xl p-2.5 border border-white/5">
-          ${f.bullets.map(b => `<li class="flex items-start gap-1.5 leading-tight"><span class="text-amber-400 shrink-0">•</span><span>${b}</span></li>`).join('')}
-        </ul>
-      ` : ''}
-      ${f.actionBtn ? `
-        <button type="button" onclick="${f.actionBtn.fn}" class="mt-2.5 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/25 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/35 border border-amber-400/50 text-amber-300 text-[11px] font-black flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer">
-          <span>⚡</span>
-          <span>${f.actionBtn.text}</span>
-          <span>⚡</span>
-        </button>
-      ` : ''}
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+          <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${f.badgeColor}">
+            ${f.badge}
+          </span>
+          <h4 class="font-bold text-xs sm:text-sm text-white truncate">${f.title}</h4>
+        </div>
+        <p class="text-[11px] text-[var(--muted-foreground)] leading-snug mb-1.5">${f.desc}</p>
+        ${f.tags ? `
+          <div class="flex flex-wrap gap-1 mt-1">
+            ${f.tags.map(t => `<span class="text-[10px] bg-white/5 border border-white/10 text-slate-300 px-1.5 py-0.5 rounded-md font-medium leading-none">${t}</span>`).join('')}
+          </div>
+        ` : ''}
+        ${f.actionBtn ? `
+          <button type="button" onclick="${f.actionBtn.fn}" class="mt-2 inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-gradient-to-r from-amber-500/20 via-yellow-500/30 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/40 border border-amber-400/50 text-amber-300 text-[10px] font-black shadow-sm transition-all active:scale-95 cursor-pointer">
+            <span>⚡</span>
+            <span>${f.actionBtn.text}</span>
+          </button>
+        ` : ''}
+      </div>
     </div>
   `).join('');
 }
@@ -3081,6 +3054,8 @@ function showSessionsScreen(push = true) {
   if (activeSessionId) {
     unlockedSessions.delete(activeSessionId);
   }
+  activeSessionId = null;
+  activeSession = null;
   hide('screen-setup'); hide('screen-game'); hide('screen-audit');
   show('screen-sessions');
   updateNavActiveState('sessions');
@@ -3089,11 +3064,7 @@ function showSessionsScreen(push = true) {
 }
 
 function goBack() {
-  if (window.history.length > 1 && window.location.hash) {
-    window.history.back();
-  } else {
-    showSessionsScreen();
-  }
+  showSessionsScreen(true);
 }
 
 // ── Init ──────────────────────────────────────────────────
@@ -3587,6 +3558,9 @@ async function openSession(id, push = true) {
     ]);
     hideLoading();
     if (e1 || e2 || !session) {
+      if (window.location.hash && window.location.hash.startsWith('#game-')) {
+        window.history.replaceState({ hash: '#sessions' }, '', '#sessions');
+      }
       showToast('Failed to load session');
       showSessionsScreen(false);
       return;
@@ -3603,6 +3577,9 @@ async function openSession(id, push = true) {
   } catch (err) {
     console.error('openSession error:', err);
     hideLoading();
+    if (window.location.hash && window.location.hash.startsWith('#game-')) {
+      window.history.replaceState({ hash: '#sessions' }, '', '#sessions');
+    }
     showToast('Failed to load session');
     showSessionsScreen(false);
   }
